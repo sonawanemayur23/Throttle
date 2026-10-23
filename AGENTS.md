@@ -24,14 +24,25 @@ npm run build:single   # one HTML file in dist-single/ for playtest links
 
 Node 22. No other services needed.
 
+## Branches and pull requests
+
+**Never commit or push to `main`.** Mayur approves every change to `main` through a pull request.
+
+- Every feature, fix or doc change gets its own branch from the latest `main`.
+- Branch names: `p2-14-pages-deploy` for a task, `fix/short-description` for a bug, `chore/short-description` for tooling and docs.
+- One task per branch and per pull request. Keep pull requests small enough to review in 10 minutes.
+- Open the pull request against `main` with the template filled in, then stop. Do not merge it yourself, even when checks pass.
+- If Mayur asks for changes, push more commits to the same branch.
+- Before starting new work, update from `main`: `git fetch origin main && git switch -c <branch> origin/main`.
+
 ## How to pick up work
 
 1. Open [docs/TASKS.md](docs/TASKS.md). Take the first task marked `todo` whose dependencies are `done`.
-2. Change its status to `doing` and put your agent or name in Owner. Commit that line alone, so two agents never take the same task.
-3. Work on a branch named after the task: `p2-14-pages-deploy`.
+2. Create the branch for it from the latest `main`.
+3. Set the task to `doing` with your agent or name in Owner. That line goes in the same pull request as the work.
 4. Meet every acceptance criterion in the task. Add or update tests for any rule you change.
 5. Run `npm run check`. Run `npm run build:single` if you touched rendering, input or UI.
-6. Set the task to `done`, add one line to its Notes with what changed, and open a pull request with the task ID in the title.
+6. Set the task to `done`, add one line to its Notes with what changed, push the branch and open a pull request with the task ID in the title. Then wait for Mayur's review.
 
 If a task is unclear or too big, split it in TASKS.md into smaller tasks with new IDs before you start. Do not guess at product decisions: add an open question to the task and stop.
 
