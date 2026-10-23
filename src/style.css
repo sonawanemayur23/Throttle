@@ -1,20 +1,34 @@
+/* One look only: a dusk highway arcade. Colors are set explicitly so the page
+   reads the same on any host theme. */
+:root {
+  color-scheme: dark;
+  --ink: #1d1438;
+  --night: #2b2257;
+  --gold: #ffd34d;
+  --gold-deep: #c98f12;
+  --rose: #b4506e;
+  --coral: #ff8a5c;
+  --mint: #7dff9a;
+  --glass: rgba(15, 10, 35, 0.42);
+  --glass-strong: rgba(15, 10, 35, 0.72);
+  --line: rgba(255, 255, 255, 0.38);
+  --display: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
 * {
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
-}
-:root {
-  color-scheme: dark;
 }
 html,
 body {
   margin: 0;
   height: 100%;
   overflow: hidden;
-  background: #2b2257;
+  background: var(--night);
   color: #fff;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--display);
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
   touch-action: none;
   overscroll-behavior: none;
 }
@@ -22,20 +36,25 @@ canvas {
   position: fixed;
   inset: 0;
   width: 100vw;
-  height: 100vh;
-  height: 100dvh;
+  height: 100%;
   display: block;
 }
 
+/* Screens */
 .screen {
   position: fixed;
   inset: 0;
-  display: grid;
-  place-items: center;
-  padding: 16px;
-  background: radial-gradient(ellipse at center, rgba(20, 10, 40, 0.35), rgba(20, 10, 40, 0.75));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-block: calc(16px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: radial-gradient(ellipse at center, rgba(20, 10, 40, 0.4), rgba(20, 10, 40, 0.82));
   transition: opacity 0.2s;
-  z-index: 5;
+  z-index: 7;
+  overflow-y: auto;
+  touch-action: pan-y;
 }
 .screen.hidden {
   opacity: 0;
@@ -44,12 +63,20 @@ canvas {
 .card {
   width: min(420px, 100%);
   text-align: center;
+  /* Centers when it fits, scrolls from the top when it does not. */
+  margin-block: auto;
+}
+#help {
+  background: rgba(20, 10, 40, 0.94);
+}
+.card.wide {
+  width: min(640px, 100%);
 }
 .kicker {
   font-size: 12px;
   letter-spacing: 0.3em;
   font-weight: 800;
-  color: #ffd34d;
+  color: var(--gold);
 }
 h1 {
   margin: 6px 0 4px;
@@ -58,7 +85,7 @@ h1 {
   font-style: italic;
   letter-spacing: -0.02em;
   line-height: 1;
-  text-shadow: 0 4px 0 #b4506e, 0 8px 24px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 4px 0 var(--rose), 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 h2 {
   margin: 8px 0 16px;
@@ -66,7 +93,12 @@ h2 {
   font-weight: 900;
   font-style: italic;
   line-height: 1;
-  text-shadow: 0 3px 0 #b4506e;
+  text-wrap: balance;
+  text-shadow: 0 3px 0 var(--rose);
+}
+h2.h-small {
+  font-size: clamp(30px, 8vw, 44px);
+  margin-bottom: 8px;
 }
 .tag {
   margin: 0 0 28px;
@@ -74,55 +106,125 @@ h2 {
   font-weight: 700;
   opacity: 0.9;
 }
+.lead {
+  margin: 0 auto 16px;
+  max-width: 46ch;
+  font-size: 15px;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
 .cta {
   appearance: none;
   border: 0;
   border-radius: 999px;
-  background: #ffd34d;
-  color: #1d1438;
-  font: 900 22px/1 system-ui, sans-serif;
+  background: var(--gold);
+  color: var(--ink);
+  font: 900 22px/1 var(--display);
   letter-spacing: 0.04em;
   padding: 18px 56px;
   cursor: pointer;
-  box-shadow: 0 6px 0 #c98f12, 0 12px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 6px 0 var(--gold-deep), 0 12px 30px rgba(0, 0, 0, 0.35);
   transition: transform 0.08s;
+  touch-action: manipulation;
 }
 .cta:active {
   transform: translateY(4px);
-  box-shadow: 0 2px 0 #c98f12;
+  box-shadow: 0 2px 0 var(--gold-deep);
 }
-.cta:focus-visible {
+.ghost {
+  appearance: none;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font: 800 15px/1 var(--display);
+  padding: 12px 28px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.ghost:hover {
+  border-color: #fff;
+}
+button:focus-visible {
   outline: 3px solid #fff;
   outline-offset: 4px;
 }
-.help {
-  margin-top: 24px;
-  font-size: 14px;
-  opacity: 0.85;
-  line-height: 1.7;
+
+/* How to play */
+.tablewrap {
+  overflow-x: auto;
+  margin: 0 0 16px;
+  border-radius: 12px;
+  background: var(--glass-strong);
 }
-.help.keys span {
-  display: inline-block;
-  margin: 0 8px;
+table.controls {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  text-align: left;
+}
+.controls th,
+.controls td {
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  vertical-align: top;
+}
+.controls th {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.controls td:first-child {
+  font-weight: 800;
   white-space: nowrap;
 }
-.help b {
+.controls tr:last-child td {
+  border-bottom: 0;
+}
+kbd {
   display: inline-block;
   min-width: 24px;
-  padding: 0 6px;
+  padding: 2px 6px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.16);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.25);
+  font: 700 13px/1.3 var(--display);
+  text-align: center;
 }
-.help.taps {
+body.touch .controls th:nth-child(2),
+body.touch .controls td:nth-child(2) {
   display: none;
 }
-body.touch .help.keys {
-  display: none;
+.tips {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 20px;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.45;
 }
-body.touch .help.taps {
+.tips div {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--glass);
+}
+.tips b {
   display: block;
+  color: var(--gold);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
 }
 
+/* Results */
 .stats {
   display: grid;
   gap: 6px;
@@ -137,6 +239,7 @@ body.touch .help.taps {
   padding: 6px 12px;
   border-radius: 10px;
   background: rgba(0, 0, 0, 0.3);
+  font-variant-numeric: tabular-nums;
 }
 .stats span,
 .score span {
@@ -148,16 +251,18 @@ body.touch .help.taps {
   font-size: 22px;
   font-weight: 900;
   background: rgba(125, 255, 154, 0.15);
-  color: #7dff9a;
+  color: var(--mint);
 }
 .best {
-  margin: 10px 0 24px;
+  margin: 10px 0 20px;
   font-size: 14px;
   font-weight: 700;
-  color: #ffd34d;
+  color: var(--gold);
   min-height: 18px;
 }
 
+/* Touch controls: steering pad on the left, fight buttons on the right.
+   Lifted well clear of the phone's home bar and any viewer toolbar. */
 #touch {
   position: fixed;
   left: 0;
@@ -166,97 +271,191 @@ body.touch .help.taps {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 0 calc(12px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+  gap: 12px;
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
   pointer-events: none;
   z-index: 4;
 }
 #touch.hidden {
   display: none;
 }
-.pad {
-  display: flex;
-  gap: 10px;
-  align-items: flex-end;
+#steerPad {
+  --knob: 0.5;
+  position: relative;
+  flex: 1 1 auto;
+  max-width: 260px;
+  min-width: 150px;
+  height: 104px;
+  border-radius: 52px;
+  background: var(--glass);
+  border: 2px solid var(--line);
   pointer-events: auto;
-}
-.pad button {
-  appearance: none;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  background: rgba(0, 0, 0, 0.28);
-  color: #fff;
-  font: 900 14px/1 system-ui, sans-serif;
-  letter-spacing: 0.05em;
-  border-radius: 50%;
-  width: 76px;
-  height: 76px;
   touch-action: none;
 }
-.pad.left button {
-  font-size: 26px;
+#steerPad .arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 30px;
+  color: rgba(255, 255, 255, 0.75);
+  transition: color 0.08s, transform 0.08s;
 }
-.pad button.on {
-  background: rgba(255, 255, 255, 0.35);
-  transform: scale(0.94);
+#steerPad .arrow.left {
+  left: 22px;
 }
-.pad .punch {
-  width: 88px;
-  height: 88px;
-  border-color: #ffd34d;
-  color: #ffd34d;
+#steerPad .arrow.right {
+  right: 22px;
 }
-.pad .kick {
-  border-color: #ff8a5c;
-  color: #ff8a5c;
+#steerPad.l .arrow.left,
+#steerPad.r .arrow.right {
+  color: var(--gold);
+  transform: translateY(-50%) scale(1.25);
 }
-.pad .small {
-  width: 58px;
-  height: 58px;
-  font-size: 10px;
+#steerPad .knob {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--knob) * 100%);
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  transition: left 0.05s;
+}
+#steerPad.on .knob {
+  background: rgba(255, 211, 77, 0.45);
+  border-color: var(--gold);
+}
+#steerPad .label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -18px;
+  text-align: center;
+  font: 800 10px/1 var(--display);
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.6);
+}
+.fight {
+  display: grid;
+  grid-template-columns: 68px 86px;
+  grid-template-rows: 68px 86px;
+  grid-template-areas:
+    'brake weapon'
+    'kick punch';
+  gap: 10px;
+  align-items: end;
+  justify-items: end;
+  pointer-events: none;
+}
+.fight button {
+  appearance: none;
+  pointer-events: auto;
+  border: 2px solid var(--line);
+  background: var(--glass);
+  color: #fff;
+  font: 900 13px/1 var(--display);
+  letter-spacing: 0.05em;
+  border-radius: 50%;
+  width: 68px;
+  height: 68px;
+  touch-action: none;
+  transition: transform 0.06s, background 0.06s;
+}
+.fight button.on {
+  transform: scale(0.92);
+}
+.b-punch {
+  grid-area: punch;
+  width: 86px !important;
+  height: 86px !important;
+  border-color: var(--gold) !important;
+  color: var(--gold) !important;
+  font-size: 15px !important;
+}
+.b-punch.on {
+  background: rgba(255, 211, 77, 0.35) !important;
+}
+.b-kick {
+  grid-area: kick;
+  border-color: var(--coral) !important;
+  color: var(--coral) !important;
+}
+.b-kick.on {
+  background: rgba(255, 138, 92, 0.35) !important;
+}
+.b-weapon {
+  grid-area: weapon;
+  justify-self: center;
+  border-color: var(--mint) !important;
+  color: var(--mint) !important;
+  visibility: hidden;
+}
+body.has-weapon .b-weapon {
+  visibility: visible;
+}
+.b-weapon.on {
+  background: rgba(125, 255, 154, 0.3) !important;
+}
+.b-brake {
+  grid-area: brake;
+  align-self: center;
+  width: 54px !important;
+  height: 54px !important;
+  font-size: 10px !important;
+}
+@media (max-width: 380px) {
+  .fight {
+    grid-template-columns: 62px 78px;
+    grid-template-rows: 62px 78px;
+    gap: 8px;
+  }
+  .fight button {
+    width: 62px;
+    height: 62px;
+  }
+  .b-punch {
+    width: 78px !important;
+    height: 78px !important;
+  }
+  #steerPad {
+    min-width: 130px;
+  }
 }
 
-#mute {
+/* Pause and sound, top center during a race. */
+#topbar {
   position: fixed;
-  right: calc(12px + env(safe-area-inset-right));
-  bottom: calc(12px + env(safe-area-inset-bottom));
   z-index: 6;
+  right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  gap: 8px;
+}
+#topbar button {
   width: 40px;
   height: 40px;
   border-radius: 50%;
   border: 0;
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.35);
   color: #fff;
-  font-size: 18px;
+  font-size: 15px;
   cursor: pointer;
+  touch-action: manipulation;
 }
-body.racing #mute {
-  opacity: 0.6;
+#pauseBtn {
+  display: none;
 }
-body.touch.racing #mute {
+body.racing #pauseBtn {
+  display: block;
+}
+body.racing #topbar {
   bottom: auto;
   right: 50%;
   transform: translateX(50%);
-  top: calc(40px + env(safe-area-inset-top));
-}
-
-@media (max-width: 420px) {
-  .pad {
-    gap: 8px;
-  }
-  .pad button {
-    width: 64px;
-    height: 64px;
-  }
-  .pad .punch {
-    width: 80px;
-    height: 80px;
-  }
-  .pad .kick {
-    width: 66px;
-    height: 66px;
-  }
-  .pad .small {
-    width: 48px;
-    height: 48px;
-    font-size: 9px;
-  }
+  top: calc(34px + env(safe-area-inset-top, 0px));
+  opacity: 0.8;
 }

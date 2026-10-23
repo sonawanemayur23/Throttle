@@ -11,7 +11,7 @@ import {
   ROAD_W,
   SEG_LEN,
 } from './config';
-import type { Car, Game, Rider, Rival, ScreenPos } from './game';
+import { WEAPONS, type Car, type Game, type Rider, type Rival, type ScreenPos } from './game';
 import { drawArch, drawBush, drawCar, drawPalm, drawPost, drawRider, drawRock, drawSign, type RiderLook } from './sprites';
 import type { Pt, Segment, Sprite } from './track';
 import { hex, lerp, mix, mod, mulberry32, ordinal, type RGB } from './util';
@@ -225,6 +225,122 @@ export class Renderer {
     if (g.phase === 'race' || g.phase === 'countdown' || g.phase === 'finished') this.hud(g);
     this.popups(g);
     if (g.phase === 'countdown') this.countdown(g);
+    if (g.hint && g.phase === 'race') this.drawHint(g.hint.text, g.hint.t, g.hint.life);
+  }
+
+  /** Teaching hint in a dark pill, placed above the touch controls. */
+  private drawHint(text: string, t: number, life: number) {
+    const ctx = this.ctx;
+    const { w, h } = this;
+    const u = Math.min(w, h * 1.6) / 100;
+    const size = Math.max(u * 2.6, 13 * (w / window.innerWidth));
+    ctx.font = `700 ${Math.round(size)}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+    const maxW = w * 0.86;
+    // Wrap to at most two lines.
+    const words = text.split(' ');
+    const lines: string[] = [];
+    let line = '';
+    for (const wd of words) {
+      const test = line ? `${line} ${wd}` : wd;
+      if (ctx.measureText(test).width > maxW - size * 2 && line) {
+        lines.push(line);
+        line = wd;
+      } else line = test;
+    }
+    lines.push(line);
+    const bw = Math.min(maxW, Math.max(...lines.map((l) => ctx.measureText(l).width)) + size * 2);
+    const bh = lines.length * size * 1.35 + size * 0.9;
+    const y = h > w ? h * 0.6 : h * 0.66;
+    const a = Math.min(1, t * 5, (life - t) * 3);
+    ctx.globalAlpha = Math.max(0, a);
+    ctx.fillStyle = 'rgba(20,12,40,0.82)';
+    ctx.beginPath();
+    ctx.roundRect(w / 2 - bw / 2, y - bh / 2, bw, bh, size * 0.6);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,211,77,0.9)';
+    ctx.lineWidth = Math.max(1.5, size * 0.1);
+    ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    lines.forEach((l, i) => ctx.fillText(l, w / 2, y - ((lines.length - 1) * size * 1.35) / 2 + i * size * 1.35));
+    ctx.globalAlpha = 1;
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  private minimap(g: Game, x: number, y: number, size: number) {
+    const ctx = this.ctx;
+    const map = g.track.map;
+    const inset = size * 0.1;
+    const s = size - inset * 2;
+    ctx.fillStyle = 'rgba(15,10,35,0.45)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, size, size, size * 0.12);
+    ctx.fill();
+    const px = (p: { x: number; y: number }) => x + inset + p.x * s;
+    const py = (p: { x: number; y: number }) => y + inset + p.y * s;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+    ctx.lineWidth = Math.max(3, size * 0.06);
+    ctx.beginPath();
+    map.forEach((p, i) => (i ? ctx.lineTo(px(p), py(p)) : ctx.moveTo(px(p), py(p))));
+    ctx.stroke();
+    // Ridden part of the route.
+    const done = Math.floor(Math.min(1, g.player.d / g.L) * (map.length - 1));
+    ctx.strokeStyle = 'rgba(255,211,77,0.85)';
+    ctx.lineWidth = Math.max(2, size * 0.035);
+    ctx.beginPath();
+    for (let i = 0; i <= done; i++) (i ? ctx.lineTo(px(map[i]), py(map[i])) : ctx.moveTo(px(map[i]), py(map[i])));
+    ctx.stroke();
+    // Finish flag.
+    const end = map[map.length - 1];
+    const fs = Math.max(3, size * 0.045);
+    for (let i = 0; i < 2; i++)
+      for (let j = 0; j < 2; j++) {
+        ctx.fillStyle = (i + j) % 2 ? '#111' : '#fff';
+        ctx.fillRect(px(end) - fs + i * fs, py(end) - fs + j * fs, fs, fs);
+      }
+    // Riders.
+    const dot = Math.max(2.5, size * 0.045);
+    for (const r of g.rivals) {
+      const m = g.track.mapAt(r.d);
+      ctx.fillStyle = r.down ? 'rgba(255,255,255,0.4)' : r.color;
+      ctx.beginPath();
+      ctx.arc(px(m), py(m), dot, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    const me = g.track.mapAt(g.player.d);
+    ctx.fillStyle = '#fff';
+    ctx.strokeStyle = '#1d1438';
+    ctx.lineWidth = Math.max(1.5, dot * 0.5);
+    ctx.beginPath();
+    ctx.arc(px(me), py(me), dot * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+
+  private weaponSlot(g: Game, x: number, y: number, u: number) {
+    const p = g.player;
+    const ctx = this.ctx;
+    if (!p.weapon) {
+      this.text('NO WEAPON', x, y + u * 2.4, u * 2, 'rgba(255,255,255,0.45)', 'left', 700);
+      return;
+    }
+    const w = WEAPONS[p.weapon];
+    ctx.fillStyle = 'rgba(15,10,35,0.5)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, u * 22, u * 3.6, u * 0.8);
+    ctx.fill();
+    this.text(w.label, x + u * 1.2, y + u * 2.6, u * 2.4, '#7dff9a', 'left', 900);
+    // One tick per swing left, placed after the measured label.
+    ctx.font = `900 ${Math.round(u * 2.4)}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+    const start = x + u * 2.2 + ctx.measureText(w.label).width;
+    const tw = Math.min(u * 1.1, (x + u * 21 - start) / w.uses - u * 0.3);
+    for (let i = 0; i < w.uses; i++) {
+      ctx.fillStyle = i < p.weaponUses ? '#7dff9a' : 'rgba(255,255,255,0.18)';
+      ctx.fillRect(start + i * (tw + u * 0.3), y + u * 1.1, tw, u * 1.4);
+    }
   }
 
   private look(r: Rider, bike: string, helmet: string): RiderLook {
@@ -239,6 +355,8 @@ export class Renderer {
       tumble: r.tumble,
       down: r.down,
       flash: r.flash,
+      weapon: r.weapon,
+      swing: r.swingT > 0 ? 1 - r.swingT / 0.28 : 0,
     };
   }
 
@@ -522,6 +640,10 @@ export class Renderer {
     const hp = Math.max(0, g.player.hp) / 100;
     ctx.fillStyle = hp > 0.4 ? '#4fe07a' : '#ff5a3c';
     ctx.fillRect(pad, hy, hw * hp, u * 1.6);
+
+    this.weaponSlot(g, pad, hy + u * 2.6, u);
+    const ms = Math.min(u * 20, h * 0.2);
+    this.minimap(g, w - pad - ms, pad + u * 13.5, ms);
 
     // Progress along the race.
     const bx = w * 0.3;

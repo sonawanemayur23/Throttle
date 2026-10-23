@@ -16,16 +16,53 @@
         <div class="kicker">PROTOTYPE</div>
         <h1>THROTTLE</h1>
         <p class="tag">Race. Punch. Kick. Win.</p>
-        <button id="startBtn" class="cta">Race</button>
-        <div class="help keys">
-          <span><b>&larr; &rarr;</b> steer</span>
-          <span><b>&uarr;</b> throttle</span>
-          <span><b>&darr;</b> brake</span>
-          <span><b>J</b> punch</span>
-          <span><b>K</b> kick</span>
-          <span><b>M</b> mute</span>
+        <div class="actions">
+          <button id="startBtn" class="cta" type="button">Race</button>
+          <button class="ghost" data-open-help type="button">How to play</button>
         </div>
-        <div class="help taps">Left thumb steers. Right thumb punches and kicks. Throttle is automatic.</div>
+      </div>
+    </div>
+
+    <div id="help" class="screen hidden" role="dialog" aria-labelledby="helpTitle">
+      <div class="card wide">
+        <h2 id="helpTitle" class="h-small">How to play</h2>
+        <p class="lead">Finish first. Knock riders off their bikes on the way for cash and combos.</p>
+        <div class="tablewrap">
+          <table class="controls">
+            <thead>
+              <tr><th>Action</th><th>Keyboard</th><th>Phone</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Steer</td><td><kbd>&larr;</kbd> <kbd>&rarr;</kbd> or <kbd>A</kbd> <kbd>D</kbd></td><td>Hold the left pad. Slide further to turn harder</td></tr>
+              <tr><td>Throttle</td><td><kbd>&uarr;</kbd> or <kbd>W</kbd></td><td>Automatic</td></tr>
+              <tr><td>Brake</td><td><kbd>&darr;</kbd> or <kbd>S</kbd></td><td>BRAKE</td></tr>
+              <tr><td>Punch</td><td><kbd>J</kbd> or <kbd>Z</kbd></td><td>PUNCH</td></tr>
+              <tr><td>Kick</td><td><kbd>K</kbd> or <kbd>X</kbd></td><td>KICK</td></tr>
+              <tr><td>Swing weapon</td><td><kbd>L</kbd> or <kbd>C</kbd></td><td>Weapon button, shown when you hold one</td></tr>
+              <tr><td>Pause</td><td><kbd>P</kbd> or <kbd>Esc</kbd></td><td>Pause button, top center</td></tr>
+              <tr><td>Sound</td><td><kbd>M</kbd></td><td>Speaker button</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="tips">
+          <div><b>Fighting</b> Ride next to a rider, within half a lane, then punch or kick. Kicks hit harder, reach further and push riders toward traffic.</div>
+          <div><b>Weapons</b> Two riders carry a club or a chain. Knock one out to take it. A kick can also knock it loose. A club has 6 swings, a chain has 8 and reaches further.</div>
+          <div><b>Map</b> Top right. White dot is you, colored dots are rivals, the checkered flag is the finish.</div>
+          <div><b>Health</b> Green bar, top left. Riders hit back. Hits from a weapon hurt more. Stay clear for 3 seconds and it refills.</div>
+          <div><b>Bonus</b> Pass cars closely at speed for a near miss. Chain hits and near misses for a combo up to x10.</div>
+        </div>
+        <button id="helpBack" class="cta" type="button">Got it</button>
+      </div>
+    </div>
+
+    <div id="pause" class="screen hidden" role="dialog" aria-labelledby="pauseTitle">
+      <div class="card">
+        <h2 id="pauseTitle">Paused</h2>
+        <div class="actions">
+          <button id="resumeBtn" class="cta" type="button">Resume</button>
+          <button id="restartBtn" class="ghost" type="button">Restart race</button>
+          <button class="ghost" data-open-help type="button">How to play</button>
+        </div>
       </div>
     </div>
 
@@ -42,24 +79,32 @@
         </div>
         <div class="score"><span>Score</span><b id="rScore"></b></div>
         <div class="best" id="rBest"></div>
-        <button id="againBtn" class="cta">Race again</button>
-        <div class="help keys">Press Enter to race again</div>
+        <div class="actions">
+          <button id="againBtn" class="cta" type="button">Race again</button>
+          <button class="ghost" data-open-help type="button">How to play</button>
+        </div>
       </div>
     </div>
 
     <div id="touch" class="hidden">
-      <div class="pad left">
-        <button data-btn="left" aria-label="Steer left">&#9664;</button>
-        <button data-btn="right" aria-label="Steer right">&#9654;</button>
+      <div id="steerPad" aria-label="Steering pad. Hold left or right of center.">
+        <span class="arrow left">&#9664;</span>
+        <span class="knob"></span>
+        <span class="arrow right">&#9654;</span>
+        <span class="label">STEER</span>
       </div>
-      <div class="pad right">
-        <button data-btn="down" class="small" aria-label="Brake">BRAKE</button>
-        <button data-btn="kick" class="kick" aria-label="Kick">KICK</button>
-        <button data-btn="punch" class="punch" aria-label="Punch">PUNCH</button>
+      <div class="fight">
+        <button data-btn="down" class="b-brake" type="button" aria-label="Brake">BRAKE</button>
+        <button data-btn="weapon" class="b-weapon" type="button" aria-label="Swing weapon" id="weaponBtn">CLUB</button>
+        <button data-btn="kick" class="b-kick" type="button" aria-label="Kick">KICK</button>
+        <button data-btn="punch" class="b-punch" type="button" aria-label="Punch">PUNCH</button>
       </div>
     </div>
 
-    <button id="mute" aria-label="Toggle sound">&#128266;</button>
+    <div id="topbar">
+      <button id="pauseBtn" type="button" aria-label="Pause">&#10074;&#10074;</button>
+      <button id="mute" type="button" aria-label="Toggle sound">&#128266;</button>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

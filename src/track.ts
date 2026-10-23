@@ -131,6 +131,44 @@ export class Track {
     }
 
     this.length = s.length * SEG_LEN;
+    this.map = this.buildMap();
+  }
+
+  /** Top-down route for the minimap: integrate the curves into a heading. Points in 0..1. */
+  map: Array<{ x: number; y: number }> = [];
+
+  private buildMap() {
+    const pts: Array<{ x: number; y: number }> = [];
+    let ang = 0;
+    let x = 0;
+    let y = 0;
+    const step = 6;
+    for (let i = 0; i < this.segments.length; i += step) {
+      let c = 0;
+      for (let k = 0; k < step && i + k < this.segments.length; k++) c += this.segments[i + k].curve;
+      ang += c * 0.0042;
+      x += Math.sin(ang) * step;
+      y -= Math.cos(ang) * step;
+      pts.push({ x, y });
+    }
+    const xs = pts.map((p) => p.x);
+    const ys = pts.map((p) => p.y);
+    const minX = Math.min(...xs);
+    const minY = Math.min(...ys);
+    const span = Math.max(Math.max(...xs) - minX, Math.max(...ys) - minY) || 1;
+    const offX = (span - (Math.max(...xs) - minX)) / 2;
+    const offY = (span - (Math.max(...ys) - minY)) / 2;
+    return pts.map((p) => ({ x: (p.x - minX + offX) / span, y: (p.y - minY + offY) / span }));
+  }
+
+  /** Map position for a distance along the race. */
+  mapAt(d: number) {
+    const t = Math.max(0, Math.min(0.9999, d / this.length)) * (this.map.length - 1);
+    const i = Math.floor(t);
+    const f = t - i;
+    const a = this.map[i];
+    const b = this.map[Math.min(i + 1, this.map.length - 1)];
+    return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f };
   }
 
   find(z: number): Segment {

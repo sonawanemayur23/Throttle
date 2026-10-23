@@ -15,6 +15,8 @@ export interface RiderLook {
   down: boolean;
   flash: number;
   player?: boolean;
+  weapon?: 'club' | 'chain' | null;
+  swing?: number; // 0..1 progress of a weapon swing, 0 = idle
 }
 
 function rr(ctx: Ctx, x: number, y: number, w: number, h: number, r: number) {
@@ -129,6 +131,8 @@ export function drawRider(ctx: Ctx, cx: number, by: number, w: number, o: RiderL
     ctx.fill();
   }
 
+  if (o.weapon) drawHeldWeapon(ctx, o.weapon, o.side, o.swing ?? 0);
+
   // Helmet.
   ctx.fillStyle = o.helmet;
   ctx.beginPath();
@@ -147,6 +151,44 @@ export function drawRider(ctx: Ctx, cx: number, by: number, w: number, o: RiderL
     ctx.globalCompositeOperation = 'source-atop';
     ctx.fillStyle = `rgba(255,255,255,${Math.min(0.85, o.flash)})`;
     ctx.fillRect(-1, -1.6, 2, 1.7);
+  }
+  ctx.restore();
+}
+
+/** Weapon in the rider's hand on `side`. Idle it rests up and out; a swing sweeps it across. */
+function drawHeldWeapon(ctx: Ctx, kind: 'club' | 'chain', side: number, swing: number) {
+  const s = side || 1;
+  const hx = s * 0.36;
+  const hy = -0.86;
+  // Angle from straight up: idle leans out, a swing sweeps far out to the side.
+  const k = swing > 0 ? Math.sin(Math.min(1, swing) * Math.PI) : 0;
+  const ang = s * (0.35 + k * 1.5);
+  const len = kind === 'club' ? 0.62 : 0.7;
+  const tx = hx + Math.sin(ang) * len;
+  const ty = hy - Math.cos(ang) * len;
+  ctx.save();
+  if (kind === 'club') {
+    ctx.strokeStyle = '#6b4424';
+    ctx.lineWidth = 0.075;
+    ctx.beginPath();
+    ctx.moveTo(hx, hy);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+    ctx.fillStyle = '#4e2f17';
+    ctx.beginPath();
+    ctx.arc(tx, ty, 0.07, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.fillStyle = '#c9ced6';
+    const n = 7;
+    for (let i = 1; i <= n; i++) {
+      const f = i / n;
+      // The chain sags a little when idle.
+      const sag = (1 - k) * Math.sin(f * Math.PI) * 0.08 * s;
+      ctx.beginPath();
+      ctx.arc(hx + (tx - hx) * f + sag, hy + (ty - hy) * f, 0.034, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
   ctx.restore();
 }

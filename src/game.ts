@@ -25,6 +25,13 @@ export interface ScreenPos {
   visible: boolean;
 }
 
+export type Weapon = 'club' | 'chain';
+
+export const WEAPONS: Record<Weapon, { label: string; dmg: number; reach: number; push: number; uses: number; cd: number }> = {
+  club: { label: 'CLUB', dmg: 48, reach: 0.4, push: 0.18, uses: 6, cd: 0.55 },
+  chain: { label: 'CHAIN', dmg: 38, reach: 0.52, push: 0.3, uses: 8, cd: 0.5 },
+};
+
 export interface Rider extends ScreenPos {
   d: number; // distance travelled since the start line, not wrapped
   x: number; // road offset, -1..1 is tarmac
@@ -38,6 +45,9 @@ export interface Rider extends ScreenPos {
   armSide: number;
   lean: number;
   flash: number;
+  weapon: Weapon | null;
+  weaponUses: number;
+  swingT: number;
 }
 
 export interface Rival extends Rider {
@@ -110,23 +120,41 @@ const newRider = (d: number, x: number): Rider => ({
   armSide: 1,
   lean: 0,
   flash: 0,
+  weapon: null,
+  weaponUses: 0,
+  swingT: 0,
   sx: 0,
   sy: 0,
   sw: 0,
   visible: false,
 });
 
+type Player = Rider & { invuln: number; cdPunch: number; cdKick: number; cdWeapon: number; lastHurt: number; crashed: boolean };
+const newPlayer = (): Player => ({ ...newRider(0, 0), invuln: 0, cdPunch: 0, cdKick: 0, cdWeapon: 0, lastHurt: -10, crashed: false });
+
+export interface Hint {
+  text: string;
+  t: number;
+  life: number;
+}
+
+function vibrate(p: number | number[]) {
+  try {
+    navigator.vibrate?.(p);
+  } catch {
+    /* not allowed in this frame */
+  }
+}
+
 export class Game {
+  /** First races show short hints that teach the controls. */
+  tutorial = false;
+  hint: Hint | null = null;
+  private hintsShown = new Set<string>();
+  private noWeaponNagAt = -10;
   track = new Track(7);
   phase: Phase = 'title';
-  player: Rider & { invuln: number; cdPunch: number; cdKick: number; lastHurt: number; crashed: boolean } = {
-    ...newRider(0, 0),
-    invuln: 0,
-    cdPunch: 0,
-    cdKick: 0,
-    lastHurt: -10,
-    crashed: false,
-  };
+  player: Player = newPlayer();
   rivals: Rival[] = [];
   cars: Car[] = [];
   countdown = 0;
@@ -158,7 +186,7 @@ export class Game {
   }
 
   reset() {
-    this.player = { ...newRider(0, 0), invuln: 0, cdPunch: 0, cdKick: 0, lastHurt: -10, crashed: false };
+    this.player = newPlayer();
     this.rivals = RIVAL_DEFS.slice(0, RIVAL_COUNT).map(([name, color, helmet], i) => ({
       ...newRider(260 + i * 330, [-0.5, 0.5, 0, -0.45, 0.45, 0][i]),
       name,
@@ -173,6 +201,12 @@ export class Game {
       hunt: false,
       huntT: Math.random() * 2,
     }));
+    // Two riders start armed. Knock them out to take their weapon.
+    const armed = [...this.rivals].sort(() => Math.random() - 0.5).slice(0, 2);
+    armed.forEach((r, i) => {
+      r.weapon = i === 0 ? 'club' : 'chain';
+      r.weaponUses = 99;
+    });
     this.cars = [];
     for (let i = 0; i < TRAFFIC_COUNT; i++) {
       const lane = [-0.66, 0, 0.66][Math.floor(Math.random() * 3)];
@@ -199,6 +233,19 @@ export class Game {
     this.popups = [];
     this.results = null;
     this.events = [];
+    this.hint = null;
+    this.hintsShown.clear();
+  }
+
+  /** Show a teaching hint once per race. */
+  showHint(key: string, text: string, life = 3.2) {
+    if (!this.tutorial || this.hintsShown.has(key)) return;
+    this.hintsShown.add(key);
+    this.hint = { text, t: 0, life };
+  }
+
+  private touchText(touch: string, keys: string) {
+    return this.input.lastTouch ? touch : keys;
   }
 
   start() {
@@ -241,6 +288,10 @@ export class Game {
     this.flash = Math.max(0, this.flash - dtReal * 3);
     for (const p of this.popups) p.t += dtReal;
     this.popups = this.popups.filter((p) => p.t < p.life);
+    if (this.hint) {
+      this.hint.t += dtReal;
+      if (this.hint.t > this.hint.life) this.hint = null;
+    }
 
     if (this.phase === 'countdown') {
       const before = Math.ceil(this.countdown);
@@ -251,6 +302,7 @@ export class Game {
         this.phase = 'race';
         this.sound.beep(true);
         this.popup('GO!', '#ffd34d', true);
+        this.showHint('steer', this.touchText('Hold the left pad to steer. Throttle is automatic.', 'Hold UP to go. LEFT and RIGHT to steer.'));
       }
       this.updateTraffic(dt);
       this.sound.engine(0.08, true);
@@ -298,6 +350,8 @@ export class Game {
     p.invuln -= dt;
     p.punchT -= dt;
     p.kickT -= dt;
+    p.swingT -= dt;
+    p.cdWeapon -= dt;
     p.flash -= dt * 4;
 
     if (p.crashed) {
@@ -319,9 +373,7 @@ export class Game {
     }
 
     const dx = dt * 2 * Math.max(speedPct, 0.15);
-    let steer = 0;
-    if (inp.isDown('left')) steer -= 1;
-    if (inp.isDown('right')) steer += 1;
+    const steer = inp.axis();
     this.steer = steer;
     p.x += steer * dx;
     p.x -= dx * speedPct * seg.curve * CENTRIFUGAL;
@@ -353,9 +405,34 @@ export class Game {
       p.kickT = 0.26;
       this.attack(32, 0.38, 0.26, 'kick');
     }
+    if (inp.take('weapon')) {
+      if (!p.weapon) {
+        if (this.raceTime - this.noWeaponNagAt > 2) {
+          this.noWeaponNagAt = this.raceTime;
+          this.popup('NO WEAPON YET', '#ffb199', false);
+          this.showHint('noweapon', 'Knock out a rider holding a club or chain to take it.', 3);
+        }
+      } else if (p.cdWeapon <= 0) {
+        const w = WEAPONS[p.weapon];
+        p.cdWeapon = w.cd;
+        p.swingT = 0.28;
+        this.attack(w.dmg, w.reach, w.push, 'weapon');
+        p.weaponUses--;
+        if (p.weaponUses <= 0) {
+          this.popup(`${w.label} BROKE`, '#ffb199');
+          p.weapon = null;
+        }
+      }
+    }
+
+    // Teach fighting the first time a rider is in reach.
+    if (this.tutorial && !this.hintsShown.has('punch')) {
+      const near = this.rivals.some((r) => !r.down && Math.abs(r.d - p.d) < 300 && Math.abs(r.x - p.x) < 0.45);
+      if (near) this.showHint('punch', this.touchText('Rider next to you. Tap PUNCH or KICK.', 'Rider next to you. Press J to punch, K to kick.'));
+    }
   }
 
-  private attack(dmg: number, reach: number, push: number, kind: 'punch' | 'kick') {
+  private attack(dmg: number, reach: number, push: number, kind: 'punch' | 'kick' | 'weapon') {
     const p = this.player;
     let best: Rival | null = null;
     let bestDist = Infinity;
@@ -380,19 +457,35 @@ export class Game {
     best.hp -= dmg;
     best.x += push * side;
     best.flash = 1;
-    best.speed *= kind === 'kick' ? 0.9 : 0.96;
+    const heavy = kind !== 'punch';
+    best.speed *= heavy ? 0.9 : 0.96;
     best.lastHitByPlayer = this.raceTime;
-    this.addCombo(kind === 'kick' ? 40 : 25);
-    this.hitstopUntil = this.clock + (kind === 'kick' ? 0.08 : 0.05);
-    this.shake = Math.max(this.shake, kind === 'kick' ? 10 : 6);
+    this.addCombo(kind === 'weapon' ? 60 : heavy ? 40 : 25);
+    this.hitstopUntil = this.clock + (kind === 'weapon' ? 0.1 : heavy ? 0.08 : 0.05);
+    this.shake = Math.max(this.shake, kind === 'weapon' ? 13 : heavy ? 10 : 6);
     this.events.push({ kind: 'spark', at: best, side });
-    this.sound.hit(kind === 'kick');
-    navigator.vibrate?.(kind === 'kick' ? 25 : 12);
+    this.sound.hit(heavy);
+    vibrate(kind === 'weapon' ? 35 : heavy ? 25 : 12);
+    // A kick can knock the weapon loose.
+    if (kind === 'kick' && best.weapon && !this.player.weapon && Math.random() < 0.3) this.takeWeapon(best);
     if (best.hp <= 0) this.knockOut(best, 'KNOCKOUT');
     else if (Math.abs(best.x) > 1.3 && best.speed > MAX_SPEED * 0.4) this.knockOut(best, 'OFF THE ROAD');
   }
 
+  private takeWeapon(r: Rival) {
+    const p = this.player;
+    if (!r.weapon) return;
+    const w = r.weapon;
+    p.weapon = w;
+    p.weaponUses = WEAPONS[w].uses;
+    r.weapon = null;
+    this.popup(`GOT ${WEAPONS[w].label}`, '#7dff9a', false);
+    this.showHint('weapon', this.touchText(`Tap the ${WEAPONS[w].label} button to swing it.`, `Press L to swing the ${WEAPONS[w].label.toLowerCase()}.`), 3.5);
+    this.sound.coin();
+  }
+
   private knockOut(r: Rival, label: string) {
+    if (r.weapon) this.takeWeapon(r);
     r.down = true;
     r.downT = 3.2;
     r.hp = 0;
@@ -410,23 +503,26 @@ export class Game {
     this.events.push({ kind: 'cash', at: r, side: 0 });
     this.sound.knockout();
     window.setTimeout(() => this.sound.coin(), 250);
-    navigator.vibrate?.([30, 40, 60]);
+    vibrate([30, 40, 60]);
   }
 
   private hurtPlayer(dmg: number, side: number, by: Rival) {
     const p = this.player;
     if (p.invuln > 0 || p.crashed) return;
-    p.hp -= dmg;
-    p.x += 0.1 * side;
+    const armed = by.weapon !== null;
+    p.hp -= armed ? dmg * 1.6 : dmg;
+    p.x += (armed ? 0.16 : 0.1) * side;
     p.flash = 1;
     p.lastHurt = this.raceTime;
-    by.punchT = 0.2;
+    if (armed) by.swingT = 0.28;
+    else by.punchT = 0.2;
     by.armSide = -side;
     this.shake = Math.max(this.shake, 8);
     this.flash = 0.35;
     this.flashColor = '255,40,40';
     this.sound.hurt();
-    navigator.vibrate?.(20);
+    vibrate(20);
+    if (p.hp < 45) this.showHint('health', 'Health low. Back off and it refills.', 2.5);
     if (p.hp <= 0) this.crashPlayer('WIPED OUT');
   }
 
@@ -445,13 +541,14 @@ export class Game {
     this.popup(label, '#ff5a3c', true);
     this.events.push({ kind: 'dust', at: { sx: 0, sy: 0, sw: 0, visible: false }, side: 0 });
     this.sound.crash();
-    navigator.vibrate?.([60, 30, 120]);
+    vibrate([60, 30, 120]);
   }
 
   private updateRivals(dt: number) {
     const p = this.player;
     for (const r of this.rivals) {
       r.punchT -= dt;
+      r.swingT -= dt;
       r.flash -= dt * 4;
       if (r.down) {
         r.downT -= dt;
@@ -461,6 +558,11 @@ export class Game {
         if (r.downT <= 0) {
           r.down = false;
           r.hp = 70;
+          // Some riders come back with a new weapon.
+          if (!r.weapon && Math.random() < 0.25) {
+            r.weapon = Math.random() < 0.5 ? 'club' : 'chain';
+            r.weaponUses = 99;
+          }
           r.tumble = 0;
           r.x = clamp(r.x, -0.8, 0.8);
           r.speed = MAX_SPEED * 0.25;
