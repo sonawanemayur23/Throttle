@@ -41,3 +41,7 @@ Menus use Saira Condensed (display, 700 to 900) and Saira (body, 400 to 700). Th
 ## D9. Garage art as inline SVG (Oct 2026)
 
 Bikes and upgrade parts in the garage are drawn as SVG React components (`src/ui/art/`), one silhouette per bike class. Upgrades show on the bike itself: tyre stripes, exhaust can and flame, armour sliders and plates. SVG stays sharp on every screen, adds a few KB, and needs no image files (in line with D3).
+
+## D10. Cached scenery stamps (Oct 2026)
+
+Scenery (palms, pines, rocks, bushes, cacti, buildings, billboards) is drawn once per variant into small offscreen canvases (`src/engine/art.ts`) and stamped with `drawImage` every frame. That lets each sprite carry gradients, shading and outlines that would be too slow to draw live for 100+ sprites a frame. Six variants per kind, built when a track loads. Riders and cars stay live-drawn because they animate, with a cheaper silhouette when far away.

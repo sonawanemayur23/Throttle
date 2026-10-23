@@ -35,7 +35,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-19 | Pick the final name and buy the domain | todo | Mayur | |
 | P2-20 | Art direction pass | parked | | P2-19 |
 | P2-21 | Garage art and menu redesign | done | Claude | |
-| P2-22 | In-race graphics overhaul | todo | Claude | |
+| P2-22 | In-race graphics overhaul | done | Claude | P2-21 |
 
 ### P2-12. Measure on low end phones
 
@@ -139,5 +139,6 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 
 ## Notes
 
+- P2-22, Oct 2026: cached high-detail scenery, shaded riders and cars with glowing lights, tyre tracks, edge lines, kerb shoulders, tinted clouds, ridge gradients, horizon haze, night headlight and road studs, additive sparks, vignette, HUD plates. Steady render 6 to 12 ms on desktop without a GPU. Fixed: the player's bike color was always black in races.
 - P2-21, Oct 2026: SVG art for 5 bikes and 3 parts, new menu design (Saira type, angled panels), engine-rendered track previews.
 - P2-01 to P2-11, Oct 2026: done in one pass. Engine takes a `RaceSetup`; content is data; save is versioned; React menus over a canvas loop; 29 tests including a bot race on every track; CI on push.
