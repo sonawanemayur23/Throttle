@@ -20,6 +20,10 @@ export interface RiderLook {
   /** Police: light bar on the tail, flashing by `time`. */
   cop?: boolean;
   time?: number;
+  /** Lights glow brighter at night. */
+  night?: boolean;
+  /** 0..1 of top speed, for exhaust flame. */
+  speed?: number;
 }
 
 function rr(ctx: Ctx, x: number, y: number, w: number, h: number, r: number) {
@@ -28,17 +32,50 @@ function rr(ctx: Ctx, x: number, y: number, w: number, h: number, r: number) {
   ctx.fill();
 }
 
+/** Lighten (k > 0) or darken (k < 0) a #rrggbb color. */
+function shade(hex: string, k: number) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (v: number) => Math.round(k >= 0 ? v + (255 - v) * k : v * (1 + k));
+  return `rgb(${f((n >> 16) & 255)},${f((n >> 8) & 255)},${f(n & 255)})`;
+}
+
+function vgrad(ctx: Ctx, y0: number, y1: number, top: string, bottom: string) {
+  const g = ctx.createLinearGradient(0, y0, 0, y1);
+  g.addColorStop(0, top);
+  g.addColorStop(1, bottom);
+  return g;
+}
+
+function hgrad(ctx: Ctx, x0: number, x1: number, edge: string, mid: string) {
+  const g = ctx.createLinearGradient(x0, 0, x1, 0);
+  g.addColorStop(0, edge);
+  g.addColorStop(0.5, mid);
+  g.addColorStop(1, edge);
+  return g;
+}
+
+/** Soft contact shadow in screen pixels. */
+function shadow(ctx: Ctx, rx: number, ry: number) {
+  const g = ctx.createRadialGradient(0, 0, 0, 0, 0, rx);
+  g.addColorStop(0, 'rgba(0,0,0,0.5)');
+  g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.save();
+  ctx.scale(1, ry / rx);
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(0, 0, rx, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
 export function drawRider(ctx: Ctx, cx: number, by: number, w: number, o: RiderLook) {
   if (w < 1.5) return;
   ctx.save();
   ctx.translate(cx, by);
+  shadow(ctx, w * 0.5, w * 0.1);
 
-  // Shadow stays flat on the road.
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.beginPath();
-  ctx.ellipse(0, 0, w * 0.45, w * 0.08, 0, 0, Math.PI * 2);
-  ctx.fill();
-
+  // Far away riders get a cheap silhouette; detail only where it can be seen.
+  const detail = w > 26;
   ctx.scale(w, w);
   if (o.down) {
     ctx.translate(0, -0.35);
@@ -50,117 +87,186 @@ export function drawRider(ctx: Ctx, cx: number, by: number, w: number, o: RiderL
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // Rear tyre.
-  ctx.fillStyle = '#121212';
-  rr(ctx, -0.12, -0.44, 0.24, 0.44, 0.08);
-  ctx.fillStyle = '#2a2a2a';
-  rr(ctx, -0.06, -0.4, 0.12, 0.36, 0.05);
+  // Rear tyre, rounded by a side-to-side gradient.
+  ctx.fillStyle = detail ? hgrad(ctx, -0.13, 0.13, '#08080a', '#34353c') : '#17171b';
+  rr(ctx, -0.13, -0.46, 0.26, 0.46, 0.1);
+  if (detail) {
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    for (let i = 0; i < 5; i++) ctx.fillRect(-0.1, -0.4 + i * 0.075, 0.2, 0.02);
+    // Hugger over the tyre.
+    ctx.fillStyle = '#1b1c21';
+    rr(ctx, -0.15, -0.5, 0.3, 0.07, 0.03);
+  }
 
-  // Exhaust.
-  ctx.fillStyle = '#8a8f96';
-  rr(ctx, 0.14, -0.36, 0.12, 0.07, 0.03);
+  // Exhaust can, right side, with a hot tip at speed.
+  ctx.fillStyle = detail ? vgrad(ctx, -0.44, -0.32, '#eef1f6', '#6c727d') : '#9aa1ad';
+  rr(ctx, 0.13, -0.44, 0.15, 0.1, 0.04);
+  if (detail) {
+    ctx.fillStyle = '#1b1c21';
+    ctx.beginPath();
+    ctx.ellipse(0.205, -0.39, 0.045, 0.03, 0, 0, Math.PI * 2);
+    ctx.fill();
+    if ((o.speed ?? 0) > 0.85 && Math.random() < 0.6) {
+      ctx.fillStyle = Math.random() < 0.5 ? '#ffb347' : '#7fc8ff';
+      ctx.beginPath();
+      ctx.ellipse(0.205, -0.39, 0.03, 0.02, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
 
-  // Tail fairing.
-  ctx.fillStyle = o.bike;
+  // Tail section: lit from above, rim highlight on the top edge.
+  ctx.fillStyle = detail ? vgrad(ctx, -0.74, -0.42, shade(o.bike, 0.35), shade(o.bike, -0.35)) : o.bike;
   ctx.beginPath();
-  ctx.moveTo(-0.3, -0.42);
-  ctx.lineTo(0.3, -0.42);
-  ctx.lineTo(0.22, -0.7);
-  ctx.lineTo(-0.22, -0.7);
+  ctx.moveTo(-0.31, -0.44);
+  ctx.lineTo(0.31, -0.44);
+  ctx.lineTo(0.23, -0.73);
+  ctx.lineTo(-0.23, -0.73);
   ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(-0.3, -0.47, 0.6, 0.05);
-  // Tail light.
-  ctx.fillStyle = '#ff2a2a';
-  rr(ctx, -0.11, -0.58, 0.22, 0.06, 0.02);
+  if (detail) {
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx.lineWidth = 0.018;
+    ctx.beginPath();
+    ctx.moveTo(-0.22, -0.72);
+    ctx.lineTo(0.22, -0.72);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fillRect(-0.31, -0.49, 0.62, 0.05);
+    // Plate and indicators.
+    ctx.fillStyle = '#e9e6d8';
+    rr(ctx, -0.085, -0.535, 0.17, 0.065, 0.01);
+    ctx.fillStyle = '#ffab2e';
+    rr(ctx, -0.29, -0.6, 0.06, 0.035, 0.01);
+    rr(ctx, 0.23, -0.6, 0.06, 0.035, 0.01);
+  }
+  // Tail light, glowing.
+  ctx.shadowColor = '#ff2a2a';
+  ctx.shadowBlur = detail ? w * (o.night ? 0.35 : 0.12) : 0;
+  ctx.fillStyle = '#ff3030';
+  rr(ctx, -0.12, -0.63, 0.24, 0.06, 0.02);
+  ctx.fillStyle = '#ffb3a8';
+  rr(ctx, -0.07, -0.615, 0.14, 0.02, 0.01);
+  ctx.shadowBlur = 0;
+
   if (o.cop) {
     // Light bar: alternating red and blue, with a glow.
     const on = Math.floor((o.time ?? 0) * 8) % 2 === 0;
     ctx.fillStyle = '#e8ecf2';
-    rr(ctx, -0.26, -0.78, 0.52, 0.07, 0.02);
-    ctx.shadowBlur = w * 0.18;
+    rr(ctx, -0.26, -0.8, 0.52, 0.07, 0.02);
+    ctx.shadowBlur = w * 0.25;
     ctx.shadowColor = on ? '#ff2a2a' : '#2a7bff';
     ctx.fillStyle = on ? '#ff3b3b' : '#4a7dff';
-    rr(ctx, -0.26, -0.84, 0.24, 0.08, 0.03);
+    rr(ctx, -0.26, -0.86, 0.24, 0.08, 0.03);
     ctx.fillStyle = on ? '#4a7dff' : '#ff3b3b';
-    rr(ctx, 0.02, -0.84, 0.24, 0.08, 0.03);
+    rr(ctx, 0.02, -0.86, 0.24, 0.08, 0.03);
     ctx.shadowBlur = 0;
   }
 
-  // Legs.
-  ctx.strokeStyle = '#23262d';
-  ctx.lineWidth = 0.12;
+  // Legs: thigh to knee, shin to the peg, kick extends one leg.
   const kick = Math.sin(Math.min(1, o.kick) * Math.PI);
-  for (const s of [-1, 1]) {
+  const pants = '#202229';
+  ctx.strokeStyle = pants;
+  ctx.lineWidth = 0.13;
+  for (const sd of [-1, 1]) {
     ctx.beginPath();
-    ctx.moveTo(s * 0.14, -0.74);
-    if (kick > 0 && s === o.side) {
-      ctx.lineTo(s * (0.3 + kick * 0.45), -0.66 + kick * 0.05);
-      ctx.lineTo(s * (0.38 + kick * 0.62), -0.62 + kick * 0.08);
+    ctx.moveTo(sd * 0.13, -0.76);
+    if (kick > 0 && sd === o.side) {
+      ctx.lineTo(sd * (0.3 + kick * 0.45), -0.68 + kick * 0.05);
+      ctx.lineTo(sd * (0.38 + kick * 0.62), -0.63 + kick * 0.08);
     } else {
-      ctx.lineTo(s * 0.3, -0.58);
-      ctx.lineTo(s * 0.27, -0.42);
+      ctx.lineTo(sd * 0.31, -0.6);
+      ctx.lineTo(sd * 0.28, -0.43);
     }
     ctx.stroke();
   }
   // Boots.
-  ctx.fillStyle = '#0d0d0d';
-  for (const s of [-1, 1]) {
-    if (kick > 0 && s === o.side) {
+  for (const sd of [-1, 1]) {
+    ctx.fillStyle = '#0d0d10';
+    if (kick > 0 && sd === o.side) {
       ctx.beginPath();
-      ctx.arc(s * (0.4 + kick * 0.62), -0.6 + kick * 0.08, 0.07, 0, Math.PI * 2);
+      ctx.arc(sd * (0.4 + kick * 0.62), -0.6 + kick * 0.08, 0.075, 0, Math.PI * 2);
       ctx.fill();
     } else {
-      rr(ctx, s * 0.27 - 0.06, -0.46, 0.12, 0.09, 0.03);
+      rr(ctx, sd * 0.28 - 0.065, -0.47, 0.13, 0.1, 0.03);
+      if (detail) {
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillRect(sd * 0.28 - 0.05, -0.45, 0.1, 0.015);
+      }
     }
   }
 
-  // Torso, leaning forward.
-  ctx.fillStyle = o.jacket;
-  rr(ctx, -0.22, -1.2, 0.44, 0.52, 0.14);
-  ctx.fillStyle = 'rgba(255,255,255,0.18)';
-  rr(ctx, -0.04, -1.16, 0.08, 0.44, 0.04);
-
-  // Arms.
-  const punch = Math.sin(Math.min(1, o.punch) * Math.PI);
-  ctx.strokeStyle = o.jacket;
-  ctx.lineWidth = 0.1;
-  for (const s of [-1, 1]) {
+  // Torso, leaning forward: shoulders wider than the waist.
+  ctx.fillStyle = detail ? vgrad(ctx, -1.22, -0.7, shade(o.jacket, 0.28), shade(o.jacket, -0.3)) : o.jacket;
+  ctx.beginPath();
+  ctx.moveTo(-0.2, -0.72);
+  ctx.lineTo(0.2, -0.72);
+  ctx.quadraticCurveTo(0.27, -0.98, 0.25, -1.16);
+  ctx.quadraticCurveTo(0, -1.26, -0.25, -1.16);
+  ctx.quadraticCurveTo(-0.27, -0.98, -0.2, -0.72);
+  ctx.closePath();
+  ctx.fill();
+  if (detail) {
+    // Back protector hump and a racing stripe down the spine.
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
     ctx.beginPath();
-    ctx.moveTo(s * 0.19, -1.1);
-    if (punch > 0 && s === o.side) {
-      ctx.lineTo(s * (0.4 + punch * 0.25), -1.08);
-      ctx.lineTo(s * (0.55 + punch * 0.4), -1.04);
+    ctx.ellipse(0, -1.0, 0.13, 0.17, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = o.player ? '#ffd34d' : 'rgba(255,255,255,0.55)';
+    rr(ctx, -0.03, -1.17, 0.06, 0.43, 0.03);
+    // Shoulder pads.
+    ctx.fillStyle = shade(o.jacket, 0.4);
+    ctx.beginPath();
+    ctx.arc(-0.21, -1.12, 0.06, 0, Math.PI * 2);
+    ctx.arc(0.21, -1.12, 0.06, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Arms to the bars, or out in a punch.
+  const punch = Math.sin(Math.min(1, o.punch) * Math.PI);
+  ctx.strokeStyle = shade(o.jacket, -0.1);
+  ctx.lineWidth = 0.1;
+  for (const sd of [-1, 1]) {
+    ctx.beginPath();
+    ctx.moveTo(sd * 0.21, -1.11);
+    if (punch > 0 && sd === o.side) {
+      ctx.lineTo(sd * (0.42 + punch * 0.24), -1.09);
+      ctx.lineTo(sd * (0.56 + punch * 0.4), -1.05);
     } else {
-      ctx.lineTo(s * 0.32, -0.95);
-      ctx.lineTo(s * 0.34, -0.8);
+      ctx.lineTo(sd * 0.33, -0.96);
+      ctx.lineTo(sd * 0.35, -0.8);
     }
     ctx.stroke();
   }
-  // Gloves.
-  ctx.fillStyle = '#111';
-  for (const s of [-1, 1]) {
+  ctx.fillStyle = '#111114';
+  for (const sd of [-1, 1]) {
     ctx.beginPath();
-    if (punch > 0 && s === o.side) ctx.arc(s * (0.57 + punch * 0.42), -1.04, 0.075, 0, Math.PI * 2);
-    else ctx.arc(s * 0.34, -0.79, 0.05, 0, Math.PI * 2);
+    if (punch > 0 && sd === o.side) ctx.arc(sd * (0.58 + punch * 0.42), -1.05, 0.08, 0, Math.PI * 2);
+    else ctx.arc(sd * 0.35, -0.79, 0.055, 0, Math.PI * 2);
     ctx.fill();
   }
 
   if (o.weapon) drawHeldWeapon(ctx, o.weapon, o.side, o.swing ?? 0);
 
-  // Helmet.
-  ctx.fillStyle = o.helmet;
+  // Helmet: lit from top left, with a stripe and a small spoiler.
+  if (detail) {
+    const hg = ctx.createRadialGradient(-0.06, -1.42, 0.02, 0, -1.33, 0.18);
+    hg.addColorStop(0, shade(o.helmet, 0.6));
+    hg.addColorStop(0.55, o.helmet);
+    hg.addColorStop(1, shade(o.helmet, -0.45));
+    ctx.fillStyle = hg;
+  } else ctx.fillStyle = o.helmet;
   ctx.beginPath();
-  ctx.arc(0, -1.32, 0.16, 0, Math.PI * 2);
+  ctx.arc(0, -1.33, 0.165, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.beginPath();
-  ctx.arc(0, -1.32, 0.16, 0.1 * Math.PI, 0.9 * Math.PI);
-  ctx.fill();
-  if (o.player) {
-    ctx.fillStyle = '#fff';
-    rr(ctx, -0.03, -1.48, 0.06, 0.3, 0.02);
+  if (detail) {
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    rr(ctx, -0.1, -1.2, 0.2, 0.035, 0.015);
+    ctx.fillStyle = o.player ? '#ffd34d' : o.cop ? '#1f3a7a' : 'rgba(255,255,255,0.75)';
+    rr(ctx, -0.028, -1.49, 0.056, 0.3, 0.025);
+    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(-0.07, -1.42, 0.045, 0.025, -0.6, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   if (o.flash > 0) {
@@ -213,48 +319,87 @@ export function drawCar(ctx: Ctx, cx: number, by: number, w: number, color: stri
   if (w < 2) return;
   ctx.save();
   ctx.translate(cx, by);
+  shadow(ctx, w * 0.62, w * 0.08);
   ctx.scale(w, w);
-  const h = kind === 2 ? 0.78 : kind === 1 ? 0.6 : 0.52;
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.beginPath();
-  ctx.ellipse(0, 0, 0.55, 0.06, 0, 0, Math.PI * 2);
-  ctx.fill();
-  // Wheels.
-  ctx.fillStyle = '#111';
-  rr(ctx, -0.46, -0.14, 0.16, 0.14, 0.03);
-  rr(ctx, 0.3, -0.14, 0.16, 0.14, 0.03);
-  // Body.
-  ctx.fillStyle = color;
-  rr(ctx, -0.5, -h * 0.62, 1, h * 0.5, 0.06);
-  // Cabin.
-  ctx.beginPath();
-  ctx.moveTo(-0.4, -h * 0.6);
-  ctx.lineTo(-0.32, -h);
-  ctx.lineTo(0.32, -h);
-  ctx.lineTo(0.4, -h * 0.6);
-  ctx.closePath();
-  ctx.fill();
-  ctx.fillStyle = 'rgba(20,30,45,0.85)';
-  ctx.beginPath();
-  ctx.moveTo(-0.34, -h * 0.64);
-  ctx.lineTo(-0.28, -h * 0.94);
-  ctx.lineTo(0.28, -h * 0.94);
-  ctx.lineTo(0.34, -h * 0.64);
-  ctx.closePath();
-  ctx.fill();
-  // Lights and plate. At night the tail lights glow.
-  if (night) {
-    ctx.shadowBlur = w * 0.12;
-    ctx.shadowColor = '#ff2020';
+  const detail = w > 30;
+  // Heights: sedan, SUV, van.
+  const H = kind === 2 ? 0.86 : kind === 1 ? 0.7 : 0.54;
+  const bodyTop = kind === 2 ? -H : -H * 0.6;
+  // Wheels peek out under the body.
+  ctx.fillStyle = '#0c0c0e';
+  rr(ctx, -0.47, -0.15, 0.17, 0.15, 0.04);
+  rr(ctx, 0.3, -0.15, 0.17, 0.15, 0.04);
+  // Lower body.
+  ctx.fillStyle = detail ? vgrad(ctx, bodyTop, -0.08, shade(color, 0.3), shade(color, -0.35)) : color;
+  rr(ctx, -0.5, bodyTop, 1, -0.08 - bodyTop, 0.07);
+  if (kind !== 2) {
+    // Cabin: narrower glasshouse.
+    ctx.fillStyle = detail ? vgrad(ctx, -H, -H * 0.6, shade(color, 0.2), color) : color;
+    ctx.beginPath();
+    ctx.moveTo(-0.43, -H * 0.58);
+    ctx.lineTo(-0.34, -H);
+    ctx.lineTo(0.34, -H);
+    ctx.lineTo(0.43, -H * 0.58);
+    ctx.closePath();
+    ctx.fill();
   }
-  ctx.fillStyle = '#ff3030';
-  rr(ctx, -0.46, -h * 0.5, 0.16, 0.07, 0.02);
-  rr(ctx, 0.3, -h * 0.5, 0.16, 0.07, 0.02);
+  // Rear window with a sky reflection.
+  const wy0 = kind === 2 ? -H * 0.94 : -H * 0.95;
+  const wy1 = kind === 2 ? -H * 0.62 : -H * 0.63;
+  const wx = kind === 2 ? 0.4 : 0.31;
+  if (detail) {
+    const wg = ctx.createLinearGradient(0, wy0, 0, wy1);
+    wg.addColorStop(0, night ? '#2a2f4a' : '#9fb7cf');
+    wg.addColorStop(1, night ? '#0b0d18' : '#2a3446');
+    ctx.fillStyle = wg;
+  } else ctx.fillStyle = '#1d2533';
+  ctx.beginPath();
+  ctx.moveTo(-wx - 0.04, wy1);
+  ctx.lineTo(-wx + 0.02, wy0);
+  ctx.lineTo(wx - 0.02, wy0);
+  ctx.lineTo(wx + 0.04, wy1);
+  ctx.closePath();
+  ctx.fill();
+  if (detail) {
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.beginPath();
+    ctx.moveTo(-wx + 0.12, wy0);
+    ctx.lineTo(-wx + 0.2, wy0);
+    ctx.lineTo(-wx + 0.06, wy1);
+    ctx.lineTo(-wx - 0.02, wy1);
+    ctx.closePath();
+    ctx.fill();
+    if (kind === 2) {
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      ctx.fillRect(-0.006, wy1, 0.012, -0.12 - wy1);
+    }
+    // Roof highlight.
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.fillRect(kind === 2 ? -0.46 : -0.32, -H, kind === 2 ? 0.92 : 0.64, 0.012);
+  }
+  // Tail lights: a cluster each side, glowing at night.
+  const ty = kind === 2 ? -H * 0.48 : -H * 0.5;
+  ctx.shadowColor = '#ff2020';
+  ctx.shadowBlur = night ? w * 0.18 : detail ? w * 0.04 : 0;
+  ctx.fillStyle = '#d61f1f';
+  rr(ctx, -0.48, ty, 0.17, 0.08, 0.02);
+  rr(ctx, 0.31, ty, 0.17, 0.08, 0.02);
   ctx.shadowBlur = 0;
-  ctx.fillStyle = '#f2f2e6';
-  ctx.fillRect(-0.1, -h * 0.34, 0.2, 0.07);
-  ctx.fillStyle = 'rgba(0,0,0,0.25)';
-  ctx.fillRect(-0.5, -h * 0.18, 1, 0.05);
+  if (detail) {
+    ctx.fillStyle = '#ff8a7a';
+    rr(ctx, -0.46, ty + 0.015, 0.06, 0.03, 0.01);
+    rr(ctx, 0.4, ty + 0.015, 0.06, 0.03, 0.01);
+    ctx.fillStyle = '#ffab2e';
+    rr(ctx, -0.36, ty + 0.015, 0.04, 0.05, 0.01);
+    rr(ctx, 0.32, ty + 0.015, 0.04, 0.05, 0.01);
+    // Plate, bumper and exhaust.
+    ctx.fillStyle = '#ece9dc';
+    rr(ctx, -0.1, -H * 0.36, 0.2, 0.07, 0.01);
+    ctx.fillStyle = '#1b1c21';
+    rr(ctx, -0.5, -0.17, 1, 0.08, 0.03);
+    ctx.fillStyle = '#5c616b';
+    rr(ctx, 0.22, -0.11, 0.07, 0.03, 0.015);
+  }
   ctx.restore();
 }
 

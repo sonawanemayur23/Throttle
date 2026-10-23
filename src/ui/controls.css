@@ -1,0 +1,204 @@
+/* In-race controls: touch pad, fight buttons, pause and sound. Kept apart from menu styles. */
+/* Touch controls: steering pad on the left, fight buttons on the right.
+   Lifted well clear of the phone's home bar and any viewer toolbar. */
+#touch {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+  z-index: 4;
+}
+#touch.hidden {
+  display: none;
+}
+#steerPad {
+  --knob: 0.5;
+  position: relative;
+  flex: 1 1 auto;
+  max-width: 260px;
+  min-width: 150px;
+  height: 104px;
+  border-radius: 52px;
+  background: rgba(15, 10, 35, 0.42);
+  border: 2px solid var(--line-strong);
+  pointer-events: auto;
+  touch-action: none;
+}
+#steerPad .arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 30px;
+  color: rgba(255, 255, 255, 0.75);
+  transition: color 0.08s, transform 0.08s;
+}
+#steerPad .arrow.left {
+  left: 22px;
+}
+#steerPad .arrow.right {
+  right: 22px;
+}
+#steerPad.l .arrow.left,
+#steerPad.r .arrow.right {
+  color: var(--gold);
+  transform: translateY(-50%) scale(1.25);
+}
+#steerPad .knob {
+  position: absolute;
+  top: 50%;
+  left: calc(var(--knob) * 100%);
+  width: 44px;
+  height: 44px;
+  margin: -22px 0 0 -22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  transition: left 0.05s;
+}
+#steerPad.on .knob {
+  background: rgba(255, 211, 77, 0.45);
+  border-color: var(--gold);
+}
+#steerPad .label {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -18px;
+  text-align: center;
+  font: 800 10px/1 var(--display);
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.6);
+}
+.fight {
+  display: grid;
+  grid-template-columns: 68px 86px;
+  grid-template-rows: 68px 86px;
+  grid-template-areas:
+    'brake weapon'
+    'kick punch';
+  gap: 10px;
+  align-items: end;
+  justify-items: end;
+  pointer-events: none;
+}
+.fight button {
+  appearance: none;
+  pointer-events: auto;
+  border: 2px solid var(--line-strong);
+  background: rgba(15, 10, 35, 0.42);
+  color: #fff;
+  font: 900 13px/1 var(--display);
+  letter-spacing: 0.05em;
+  border-radius: 50%;
+  width: 68px;
+  height: 68px;
+  touch-action: none;
+  transition: transform 0.06s, background 0.06s;
+}
+.fight button.on {
+  transform: scale(0.92);
+}
+.b-punch {
+  grid-area: punch;
+  width: 86px !important;
+  height: 86px !important;
+  border-color: var(--gold) !important;
+  color: var(--gold) !important;
+  font-size: 15px !important;
+}
+.b-punch.on {
+  background: rgba(255, 211, 77, 0.35) !important;
+}
+.b-kick {
+  grid-area: kick;
+  border-color: var(--coral) !important;
+  color: var(--coral) !important;
+}
+.b-kick.on {
+  background: rgba(255, 138, 92, 0.35) !important;
+}
+.b-weapon {
+  grid-area: weapon;
+  justify-self: center;
+  border-color: var(--mint) !important;
+  color: var(--mint) !important;
+  visibility: hidden;
+}
+body.has-weapon .b-weapon {
+  visibility: visible;
+}
+.b-weapon.on {
+  background: rgba(125, 255, 154, 0.3) !important;
+}
+.b-brake {
+  grid-area: brake;
+  align-self: center;
+  width: 54px !important;
+  height: 54px !important;
+  font-size: 10px !important;
+}
+@media (max-width: 380px) {
+  .fight {
+    grid-template-columns: 62px 78px;
+    grid-template-rows: 62px 78px;
+    gap: 8px;
+  }
+  .fight button {
+    width: 62px;
+    height: 62px;
+  }
+  .b-punch {
+    width: 78px !important;
+    height: 78px !important;
+  }
+  #steerPad {
+    min-width: 130px;
+  }
+}
+
+/* Pause and sound, top center during a race. */
+#topbar {
+  position: fixed;
+  z-index: 6;
+  right: max(12px, env(safe-area-inset-right, 0px));
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  gap: 8px;
+}
+#topbar button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 0;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+#pauseBtn {
+  display: none;
+}
+body.racing #pauseBtn {
+  display: block;
+}
+body.racing #topbar {
+  bottom: auto;
+  right: 50%;
+  transform: translateX(50%);
+  top: calc(34px + env(safe-area-inset-top, 0px));
+  opacity: 0.8;
+}
+
+/* Sound and pause float only during a race; on menus sound lives in Settings. */
+body:not(.racing) #topbar {
+  display: none;
+}

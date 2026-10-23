@@ -6,6 +6,7 @@ import { loadSave } from './save/save';
 import { App } from './ui/App';
 import { registerServiceWorker } from './app/pwa';
 import './ui/style.css';
+import './ui/controls.css';
 
 const canvas = document.getElementById('game') as HTMLCanvasElement;
 const host = new GameHost(canvas, raceSetup(loadSave(), 1, TRACKS[0].id));

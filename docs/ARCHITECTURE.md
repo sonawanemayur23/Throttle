@@ -36,7 +36,8 @@ Touch controls and the pause and sound buttons live in `index.html`, outside Rea
 | `track.ts` | Builds a looped road from a `TrackDef` seed: curves, hills, scenery, minimap route. Same seed gives the same road on every device |
 | `game.ts` | Simulation: player, 6 rivals, police, traffic, combat, weapons, combos, hints, results |
 | `render.ts` | Pseudo 3D road renderer on Canvas 2D: sky, road, sprites back to front, particles, HUD, minimap |
-| `sprites.ts` | Procedural drawing for riders, cars and scenery |
+| `sprites.ts` | Live drawing for riders, cars, lamps and the start arch |
+| `art.ts` | High-detail scenery and clouds, drawn once into cached images (decision D10) |
 | `audio.ts` | Synthesized engine, hits, siren. Handles phone audio unlock |
 | `input.ts` | Keyboard, touch steering pad and buttons, gamepad |
 

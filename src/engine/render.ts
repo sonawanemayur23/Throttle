@@ -29,7 +29,11 @@ import {
   type RiderLook,
 } from './sprites';
 import type { Pt, Segment, Sprite } from './track';
+import { SpriteCache } from './art';
 import { hex, lerp, mix, mod, mulberry32, ordinal, type RGB } from './util';
+
+const HUD_FONT = '"Saira Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif';
+const WHITE: RGB = [255, 255, 255];
 
 interface RoadColors {
   fog: RGB;
@@ -95,9 +99,18 @@ export class Renderer {
   private def: TrackDef | null = null;
   private C: RoadColors | null = null;
   private night = false;
+  private cache = new SpriteCache();
+  private vignette: HTMLCanvasElement | null = null;
+  /** Ridge fill colors per layer: [top, base]. */
+  private ridgeFill: Array<[string, string]> = [];
+  private cloudTint = '255,255,255';
   private lines: Array<{ a: number; r: number; len: number; speed: number }> = [];
 
-  constructor(private canvas: HTMLCanvasElement) {
+  /** Pass `fixed` to draw at a set size (track previews) instead of filling the window. */
+  constructor(
+    private canvas: HTMLCanvasElement,
+    private fixed?: { width: number; height: number },
+  ) {
     const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) throw new Error('Canvas 2D is not supported');
     this.ctx = ctx;
@@ -118,6 +131,14 @@ export class Renderer {
   }
 
   resize() {
+    if (this.fixed) {
+      this.canvas.width = this.fixed.width;
+      this.canvas.height = this.fixed.height;
+      this.w = this.fixed.width;
+      this.h = this.fixed.height;
+      this.kx = Math.max(this.w, this.h * 1.35) / 2;
+      return;
+    }
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const cw = window.innerWidth;
     const ch = window.innerHeight;
@@ -161,6 +182,11 @@ export class Renderer {
       this.def = g.track.def;
       this.C = roadColors(this.def.palette);
       this.night = !!this.def.palette.night;
+      const fogC = hex(this.def.palette.fog);
+      this.ridgeFill = this.def.palette.ridges.map((c, i) => [mix(hex(c), WHITE, 0.1), mix(hex(c), fogC, 0.25 + i * 0.12)] as [string, string]);
+      const t = hex(this.def.palette.sky[3]).map((v) => Math.round(v + (255 - v) * 0.55));
+      this.cloudTint = t.join(',');
+      this.cache.prewarm(this.def.scenery.map(([k]) => k));
     }
 
     ctx.save();
@@ -212,7 +238,7 @@ export class Renderer {
       seg.clip = maxy;
       (seg as Segment & { fog: number }).fog = fog;
       if (seg.p1.camera.z <= CAM_DEPTH || seg.p2.screen.y >= seg.p1.screen.y || seg.p2.screen.y >= maxy) continue;
-      this.drawSegment(seg, fog);
+      this.drawSegment(seg, fog, n);
       maxy = seg.p1.screen.y;
     }
 
@@ -231,8 +257,10 @@ export class Renderer {
       playerDrawn = true;
       const inv = (p as Rider & { invuln: number }).invuln;
       if (inv > 0 && !p.down && Math.floor(g.clock * 16) % 2 === 1) return;
-      drawRider(ctx, w / 2, py + bounce, pw, { ...this.look(p, '#16181d', '#f2f2f2'), jacket: '#2b2f3a', player: true });
+      drawRider(ctx, w / 2, py + bounce, pw, { ...this.look(p, g.setup.bike.color, '#f2f2f2'), jacket: '#2b2f3a', player: true, night: this.night, speed: speedPct });
     };
+
+    if (this.night && g.phase !== 'title') this.headlight(py, pw);
 
     // Sprites and entities, back to front. The player slots in at its own depth.
     for (let n = DRAW_DIST - 1; n > 0; n--) {
@@ -251,12 +279,12 @@ export class Renderer {
         else if (d.kind === 'cop') {
           const c = d.c;
           this.drawEntity(seg, c, mod(c.d, L), c.x, BIKE_WORLD_W, fogA, (ex, ey, ew) =>
-            drawRider(ctx, ex, ey, ew, { ...this.look(c, '#eef1f6', '#eef1f6'), jacket: '#1f3a7a', cop: true, time: g.clock }),
+            drawRider(ctx, ex, ey, ew, { ...this.look(c, '#eef1f6', '#eef1f6'), jacket: '#1f3a7a', cop: true, time: g.clock, night: this.night }),
           );
         }
         else if (d.kind === 'rival') {
           const r = d.r;
-          this.drawEntity(seg, r, mod(r.d, L), r.x, BIKE_WORLD_W, fogA, (ex, ey, ew) => drawRider(ctx, ex, ey, ew, this.look(r, r.color, r.helmet)));
+          this.drawEntity(seg, r, mod(r.d, L), r.x, BIKE_WORLD_W, fogA, (ex, ey, ew) => drawRider(ctx, ex, ey, ew, { ...this.look(r, r.color, r.helmet), night: this.night }));
           if (r.visible && !r.down && r.sw > 18 && r.hp < 100) this.hpPip(r);
         }
       }
@@ -268,6 +296,7 @@ export class Renderer {
     this.handleEvents(g);
     this.drawParticles(dt);
     ctx.restore();
+    this.drawVignette();
 
     if (g.flash > 0) {
       ctx.fillStyle = `rgba(${g.flashColor},${g.flash * 0.5})`;
@@ -460,6 +489,15 @@ export class Renderer {
 
   private drawSprite(sp: Sprite, x: number, y: number, w: number) {
     const ctx = this.ctx;
+    const stamp = this.cache.get(sp.kind, sp.variant);
+    if (stamp) {
+      if (w < 1) return;
+      const k = w / stamp.unit;
+      const iw = stamp.img.width * k;
+      const ih = stamp.img.height * k;
+      ctx.drawImage(stamp.img, x - iw / 2, y - ih + 2 * k, iw, ih);
+      return;
+    }
     switch (sp.kind) {
       case 'palm':
         return drawPalm(ctx, x, y, w, sp.variant);
@@ -528,6 +566,20 @@ export class Renderer {
     ctx.fillStyle = glow;
     ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
 
+    // Clouds drift with the curves. None at night.
+    if (!pal.night) {
+      ctx.globalAlpha = 0.55;
+      for (let i = 0; i < 6; i++) {
+        const img = this.cache.cloud(i % 3, this.cloudTint);
+        const cw = w * (0.32 + (i % 3) * 0.08);
+        const ch = (cw * img.height) / img.width;
+        const x = ((((i * 0.19 + this.skyOffset * (0.4 + (i % 2) * 0.2)) % 1) + 1) % 1) * (w + cw) - cw;
+        const y = h * (0.06 + ((i * 37) % 23) / 100);
+        ctx.drawImage(img, x, y, cw, ch);
+      }
+      ctx.globalAlpha = 1;
+    }
+
     // Ridges with parallax, or a city skyline. Hills shift them up and down a little.
     const lift = playerY / 30000;
     this.ridges.forEach((pts, layer) => {
@@ -535,7 +587,12 @@ export class Renderer {
       const off = (this.skyOffset * speed) % 1;
       const baseY = h * (0.5 + layer * 0.025) + lift * h * (layer + 1) * 0.03;
       const amp = h * (0.16 - layer * 0.035);
-      ctx.fillStyle = pal.ridges[layer];
+      // Lit tops fading into haze at the base.
+      const fill = this.ridgeFill[layer];
+      const grad = ctx.createLinearGradient(0, baseY - amp, 0, baseY);
+      grad.addColorStop(0, fill ? fill[0] : pal.ridges[layer]);
+      grad.addColorStop(1, fill ? fill[1] : pal.ridges[layer]);
+      ctx.fillStyle = grad;
       const n = pts.length;
       if (pal.skyline) {
         // Blocks: one tower per point, with a few lit windows on the nearest layer.
@@ -546,7 +603,7 @@ export class Renderer {
           const idx = ((i + Math.floor(shift / bw)) % n + n) % n;
           const x = i * bw - (shift % bw);
           const top = baseY - pts[idx] * amp * 1.3;
-          ctx.fillStyle = pal.ridges[layer];
+          ctx.fillStyle = grad;
           ctx.fillRect(x, top, bw + 1, h - top);
           if (layer === 2 && bw > 12) {
             ctx.fillStyle = 'rgba(255,215,120,0.55)';
@@ -569,6 +626,15 @@ export class Renderer {
       ctx.closePath();
       ctx.fill();
     });
+
+    // Haze where the land meets the sky.
+    const hy = h * 0.5;
+    const haze = ctx.createLinearGradient(0, hy - h * 0.09, 0, hy + h * 0.02);
+    const fogRGB = hex(pal.fog);
+    haze.addColorStop(0, `rgba(${fogRGB[0]},${fogRGB[1]},${fogRGB[2]},0)`);
+    haze.addColorStop(1, `rgba(${fogRGB[0]},${fogRGB[1]},${fogRGB[2]},${pal.night ? 0.35 : 0.55})`);
+    ctx.fillStyle = haze;
+    ctx.fillRect(0, hy - h * 0.09, w, h * 0.11);
   }
 
   private poly(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number, color: string) {
@@ -583,7 +649,7 @@ export class Renderer {
     ctx.fill();
   }
 
-  private drawSegment(seg: Segment, fog: number) {
+  private drawSegment(seg: Segment, fog: number, n: number) {
     const { w } = this;
     const a = seg.p1.screen;
     const b = seg.p2.screen;
@@ -599,21 +665,104 @@ export class Renderer {
     const r2 = b.w / 9;
     // Bottom edges overlap by 1px to hide anti-aliasing seams between segments.
     const ay = a.y + 1;
+    // Worn shoulder just outside the kerb.
+    const s1 = a.w * 0.16;
+    const s2 = b.w * 0.16;
+    const shoulderC = mix(C.ground[k].map((v) => v * 0.84) as RGB, C.fog, f);
+    this.poly(a.x - a.w - r1 - s1, ay, a.x - a.w - r1, ay, b.x - b.w - r2, b.y, b.x - b.w - r2 - s2, b.y, shoulderC);
+    this.poly(a.x + a.w + r1 + s1, ay, a.x + a.w + r1, ay, b.x + b.w + r2, b.y, b.x + b.w + r2 + s2, b.y, shoulderC);
+    // Kerbs.
     this.poly(a.x - a.w - r1, ay, a.x - a.w, ay, b.x - b.w, b.y, b.x - b.w - r2, b.y, mix(C.rumble[k], C.fog, f));
     this.poly(a.x + a.w + r1, ay, a.x + a.w, ay, b.x + b.w, b.y, b.x + b.w + r2, b.y, mix(C.rumble[k], C.fog, f));
+    // Tarmac.
     this.poly(a.x - a.w, ay, a.x + a.w, ay, b.x + b.w, b.y, b.x - b.w, b.y, seg.start ? mix(C.start, C.fog, f) : mix(C.road[k], C.fog, f));
+    if (seg.start) return;
 
-    if (!seg.dark && !seg.start) {
+    const laneW1 = (a.w * 2) / LANES;
+    const laneW2 = (b.w * 2) / LANES;
+
+    // Darker wheel tracks in each lane, only up close where they read.
+    if (n < 90) {
+      ctx.fillStyle = `rgba(0,0,0,${0.09 * fog})`;
+      for (let lane = 0; lane < LANES; lane++) {
+        const c1 = a.x - a.w + laneW1 * (lane + 0.5);
+        const c2 = b.x - b.w + laneW2 * (lane + 0.5);
+        for (const o of [-0.22, 0.22]) {
+          const t1 = laneW1 * 0.07;
+          const t2 = laneW2 * 0.07;
+          ctx.beginPath();
+          ctx.moveTo(c1 + o * laneW1 - t1, ay);
+          ctx.lineTo(c1 + o * laneW1 + t1, ay);
+          ctx.lineTo(c2 + o * laneW2 + t2, b.y);
+          ctx.lineTo(c2 + o * laneW2 - t2, b.y);
+          ctx.fill();
+        }
+      }
+    }
+
+    // Solid edge lines.
+    const e1 = a.w / 40;
+    const e2 = b.w / 40;
+    const edge = mix(C.lane, C.fog, f);
+    const in1 = a.w * 0.04;
+    const in2 = b.w * 0.04;
+    this.poly(a.x - a.w + in1, a.y, a.x - a.w + in1 + e1, a.y, b.x - b.w + in2 + e2, b.y, b.x - b.w + in2, b.y, edge);
+    this.poly(a.x + a.w - in1, a.y, a.x + a.w - in1 - e1, a.y, b.x + b.w - in2 - e2, b.y, b.x + b.w - in2, b.y, edge);
+
+    // Dashed lane lines, with reflective studs at night.
+    if (!seg.dark) {
       const l1 = a.w / 50;
       const l2 = b.w / 50;
-      const laneW1 = (a.w * 2) / LANES;
-      const laneW2 = (b.w * 2) / LANES;
       let lx1 = a.x - a.w + laneW1;
       let lx2 = b.x - b.w + laneW2;
       for (let lane = 1; lane < LANES; lane++, lx1 += laneW1, lx2 += laneW2) {
-        this.poly(lx1 - l1 / 2, a.y, lx1 + l1 / 2, a.y, lx2 + l2 / 2, b.y, lx2 - l2 / 2, b.y, mix(C.lane, C.fog, f));
+        this.poly(lx1 - l1 / 2, a.y, lx1 + l1 / 2, a.y, lx2 + l2 / 2, b.y, lx2 - l2 / 2, b.y, edge);
       }
+    } else if (this.night && n < 160 && seg.index % 2 === 0) {
+      const sz = Math.max(1, a.w / 70);
+      ctx.fillStyle = `rgba(255,214,120,${0.9 * fog})`;
+      let lx1 = a.x - a.w + laneW1;
+      for (let lane = 1; lane < LANES; lane++, lx1 += laneW1) ctx.fillRect(lx1 - sz / 2, a.y - sz, sz, sz * 0.7);
     }
+  }
+
+  /** Warm pool of headlight on the road ahead, at night. */
+  private headlight(py: number, pw: number) {
+    const ctx = this.ctx;
+    const cx = this.w / 2;
+    const cy = py - pw * 1.5;
+    const rx = pw * 2.4;
+    const ry = pw * 1.1;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.translate(cx, cy);
+    ctx.scale(rx / ry, 1);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, ry);
+    g.addColorStop(0, 'rgba(255,226,160,0.32)');
+    g.addColorStop(0.6, 'rgba(255,226,160,0.12)');
+    g.addColorStop(1, 'rgba(255,226,160,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(-ry, -ry, ry * 2, ry * 2);
+    ctx.restore();
+  }
+
+  /** Darkened corners pull the eye to the road. Built once per screen size. */
+  private drawVignette() {
+    const { w, h } = this;
+    if (!this.vignette || this.vignette.width !== w || this.vignette.height !== h) {
+      const c = document.createElement('canvas');
+      c.width = w;
+      c.height = h;
+      const v = c.getContext('2d');
+      if (!v) return;
+      const g = v.createRadialGradient(w / 2, h * 0.55, Math.min(w, h) * 0.35, w / 2, h * 0.55, Math.hypot(w, h) * 0.62);
+      g.addColorStop(0, 'rgba(0,0,0,0)');
+      g.addColorStop(1, 'rgba(8,4,20,0.42)');
+      v.fillStyle = g;
+      v.fillRect(0, 0, w, h);
+      this.vignette = c;
+    }
+    this.ctx.drawImage(this.vignette, 0, 0);
   }
 
   private speedLines(kmh: number, dt: number) {
@@ -704,7 +853,15 @@ export class Renderer {
         ctx.arc(p.x, p.y, p.size * (1 + p.life * 2), 0, Math.PI * 2);
         ctx.fill();
       } else {
-        ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+        // Sparks glow: additive blend and a short streak along their motion.
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = p.size;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x - p.vx * 0.03, p.y - p.vy * 0.03);
+        ctx.stroke();
+        ctx.globalCompositeOperation = 'source-over';
       }
     }
     ctx.globalAlpha = 1;
@@ -713,11 +870,12 @@ export class Renderer {
 
   private text(t: string, x: number, y: number, size: number, color = '#fff', align: CanvasTextAlign = 'left', weight = 800) {
     const ctx = this.ctx;
-    ctx.font = `${weight} ${Math.round(size)}px system-ui, -apple-system, "Segoe UI", sans-serif`;
+    ctx.font = `${weight >= 900 ? 'italic ' : ''}${weight} ${Math.round(size)}px ${HUD_FONT}`;
     ctx.textAlign = align;
     ctx.textBaseline = 'alphabetic';
-    ctx.lineWidth = size * 0.16;
-    ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+    ctx.lineWidth = size * 0.14;
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(10,6,24,0.7)';
     ctx.strokeText(t, x, y);
     ctx.fillStyle = color;
     ctx.fillText(t, x, y);
@@ -729,6 +887,10 @@ export class Renderer {
     const u = Math.min(w, h * 1.6) / 100;
     const pad = u * 2.5;
     const total = 1 + g.rivals.length;
+
+    // Angled plates behind place and speed keep them readable on any sky.
+    this.plate(0, 0, u * 30, pad + u * 12.6);
+    this.plate(w - u * 30, 0, u * 30, pad + u * 12.6, true);
 
     // Place.
     const place = g.place();
@@ -749,6 +911,9 @@ export class Renderer {
     const hp = Math.max(0, g.player.hp) / g.player.hpMax;
     ctx.fillStyle = hp > 0.4 ? '#4fe07a' : '#ff5a3c';
     ctx.fillRect(pad, hy, hw * hp, u * 1.6);
+    // Segment ticks.
+    ctx.fillStyle = 'rgba(10,6,24,0.6)';
+    for (let i = 1; i < 10; i++) ctx.fillRect(pad + (hw * i) / 10 - 1, hy, 2, u * 1.6);
 
     this.weaponSlot(g, pad, hy + u * 2.6, u);
 
@@ -789,6 +954,29 @@ export class Renderer {
       const cw = u * 14 * (g.comboT / 2.6);
       ctx.fillRect(w / 2 - cw / 2, cy + u * 4.2, cw, u * 0.6);
     }
+  }
+
+  private plate(x: number, y: number, pw: number, ph: number, right = false) {
+    const ctx = this.ctx;
+    const slant = ph * 0.35;
+    const g = ctx.createLinearGradient(x, 0, x + pw, 0);
+    g.addColorStop(right ? 1 : 0, 'rgba(10,6,24,0.62)');
+    g.addColorStop(right ? 0 : 1, 'rgba(10,6,24,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    if (right) {
+      ctx.moveTo(x + slant, y);
+      ctx.lineTo(x + pw, y);
+      ctx.lineTo(x + pw, y + ph);
+      ctx.lineTo(x, y + ph);
+    } else {
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + pw, y);
+      ctx.lineTo(x + pw - slant, y + ph);
+      ctx.lineTo(x, y + ph);
+    }
+    ctx.closePath();
+    ctx.fill();
   }
 
   private popups(g: Game) {
