@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#2b2257" />
+    <title>Throttle Prototype</title>
+    <meta name="description" content="Race motorbikes and punch rivals off the road. Phase 1 feel prototype." />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="game"></canvas>
+
+    <div id="title" class="screen">
+      <div class="card">
+        <div class="kicker">PROTOTYPE</div>
+        <h1>THROTTLE</h1>
+        <p class="tag">Race. Punch. Kick. Win.</p>
+        <button id="startBtn" class="cta">Race</button>
+        <div class="help keys">
+          <span><b>&larr; &rarr;</b> steer</span>
+          <span><b>&uarr;</b> throttle</span>
+          <span><b>&darr;</b> brake</span>
+          <span><b>J</b> punch</span>
+          <span><b>K</b> kick</span>
+          <span><b>M</b> mute</span>
+        </div>
+        <div class="help taps">Left thumb steers. Right thumb punches and kicks. Throttle is automatic.</div>
+      </div>
+    </div>
+
+    <div id="results" class="screen hidden">
+      <div class="card">
+        <div class="kicker" id="rRace"></div>
+        <h2 id="rPlace"></h2>
+        <div class="stats">
+          <div><span>Time</span><b id="rTime"></b></div>
+          <div><span>Knockouts</span><b id="rKos"></b></div>
+          <div><span>Near misses</span><b id="rNear"></b></div>
+          <div><span>Best combo</span><b id="rCombo"></b></div>
+          <div><span>Place bonus</span><b id="rBonus"></b></div>
+        </div>
+        <div class="score"><span>Score</span><b id="rScore"></b></div>
+        <div class="best" id="rBest"></div>
+        <button id="againBtn" class="cta">Race again</button>
+        <div class="help keys">Press Enter to race again</div>
+      </div>
+    </div>
+
+    <div id="touch" class="hidden">
+      <div class="pad left">
+        <button data-btn="left" aria-label="Steer left">&#9664;</button>
+        <button data-btn="right" aria-label="Steer right">&#9654;</button>
+      </div>
+      <div class="pad right">
+        <button data-btn="down" class="small" aria-label="Brake">BRAKE</button>
+        <button data-btn="kick" class="kick" aria-label="Kick">KICK</button>
+        <button data-btn="punch" class="punch" aria-label="Punch">PUNCH</button>
+      </div>
+    </div>
+
+    <button id="mute" aria-label="Toggle sound">&#128266;</button>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
