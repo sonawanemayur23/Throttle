@@ -27,6 +27,5 @@ export const CAR_HALF = 0.2;
 export const BIKE_WORLD_W = 300;
 export const CAR_WORLD_W = 820;
 
-export const TRACK_SEGMENTS_TARGET = 3500;
 export const RIVAL_COUNT = 6;
 export const TRAFFIC_COUNT = 70;

@@ -1,4 +1,5 @@
-import { RUMBLE_LEN, SEG_LEN, TRACK_SEGMENTS_TARGET } from './config';
+import type { SceneryKind, TrackDef } from '../content/tracks';
+import { RUMBLE_LEN, SEG_LEN } from './config';
 import { easeIn, easeInOut, mulberry32 } from './util';
 
 export interface Pt {
@@ -7,7 +8,7 @@ export interface Pt {
   screen: { x: number; y: number; w: number; scale: number };
 }
 
-export type SpriteKind = 'palm' | 'rock' | 'sign' | 'bush' | 'post' | 'arch';
+export type SpriteKind = SceneryKind | 'post' | 'arch';
 
 export interface Sprite {
   kind: SpriteKind;
@@ -40,8 +41,10 @@ export class Track {
   segments: Segment[] = [];
   length = 0;
 
-  constructor(seed = 7) {
-    const rng = mulberry32(seed);
+  constructor(readonly def: TrackDef) {
+    const rng = mulberry32(def.seed);
+    const cK = def.curves;
+    const hK = def.hills;
     const s = this.segments;
     const lastY = () => (s.length === 0 ? 0 : s[s.length - 1].p2.world.y);
 
@@ -71,23 +74,25 @@ export class Track {
     const pick = <T>(arr: T[]) => arr[Math.floor(rng() * arr.length)];
     const sign = () => (rng() < 0.5 ? -1 : 1);
 
-    const straight = (n = LEN.MEDIUM) => addRoad(n, n, n, 0, 0);
-    const hill = (n = LEN.MEDIUM, h = HILL.MEDIUM) => addRoad(n, n, n, 0, h);
-    const curve = (n = LEN.MEDIUM, c = CURVE.MEDIUM, h = 0) => addRoad(n, n, n, c, h);
+    // Shape knobs from the track definition scale every curve and hill.
+    const road = (e: number, h: number, l: number, c: number, y: number) => addRoad(e, h, l, c * cK, y * hK);
+    const straight = (n = LEN.MEDIUM) => road(n, n, n, 0, 0);
+    const hill = (n = LEN.MEDIUM, h = HILL.MEDIUM) => road(n, n, n, 0, h);
+    const curve = (n = LEN.MEDIUM, c = CURVE.MEDIUM, h = 0) => road(n, n, n, c, h);
     const sCurves = () => {
       const d = sign();
-      addRoad(LEN.MEDIUM, LEN.MEDIUM, LEN.MEDIUM, -CURVE.EASY * d, 0);
-      addRoad(LEN.MEDIUM, LEN.MEDIUM, LEN.MEDIUM, CURVE.MEDIUM * d, HILL.MEDIUM * sign());
-      addRoad(LEN.MEDIUM, LEN.MEDIUM, LEN.MEDIUM, CURVE.EASY * d, -HILL.LOW);
-      addRoad(LEN.MEDIUM, LEN.MEDIUM, LEN.MEDIUM, -CURVE.EASY * d, HILL.MEDIUM * sign());
-      addRoad(LEN.MEDIUM, LEN.MEDIUM, LEN.MEDIUM, -CURVE.MEDIUM * d, -HILL.MEDIUM);
+      road(LEN.MEDIUM, LEN.MEDIUM, LEN.MEDIUM, -CURVE.EASY * d, 0);
+      road(LEN.MEDIUM, LEN.MEDIUM, LEN.MEDIUM, CURVE.MEDIUM * d, HILL.MEDIUM * sign());
+      road(LEN.MEDIUM, LEN.MEDIUM, LEN.MEDIUM, CURVE.EASY * d, -HILL.LOW);
+      road(LEN.MEDIUM, LEN.MEDIUM, LEN.MEDIUM, -CURVE.EASY * d, HILL.MEDIUM * sign());
+      road(LEN.MEDIUM, LEN.MEDIUM, LEN.MEDIUM, -CURVE.MEDIUM * d, -HILL.MEDIUM);
     };
     const bumps = () => {
-      for (const h of [5, -2, -5, 8, 5, -7, 5, -2]) addRoad(10, 10, 10, 0, h);
+      for (const h of [5, -2, -5, 8, 5, -7, 5, -2]) road(10, 10, 10, 0, h);
     };
     const rolling = () => {
       const h = HILL.LOW / 2;
-      for (const y of [h, -h, h, 0, h / 2, 0]) addRoad(LEN.SHORT, LEN.SHORT, LEN.SHORT, 0, y);
+      for (const y of [h, -h, h, 0, h / 2, 0]) road(LEN.SHORT, LEN.SHORT, LEN.SHORT, 0, y);
     };
 
     // Start straight, then a random but fair sequence of pieces.
@@ -103,9 +108,9 @@ export class Track {
       () => straight(LEN.MEDIUM),
       () => curve(LEN.LONG, CURVE.MEDIUM * sign(), HILL.MEDIUM * sign()),
     ];
-    while (s.length < TRACK_SEGMENTS_TARGET - 300) pick(pieces)();
+    while (s.length < def.segments - 300) pick(pieces)();
     // Bring the road back to ground level and straighten it to close the loop.
-    const descend = () => addRoad(200, 200, 200, -CURVE.EASY, -lastY() / SEG_LEN);
+    const descend = () => addRoad(200, 200, 200, -CURVE.EASY * cK, -lastY() / SEG_LEN);
     descend();
     straight(LEN.SHORT);
 
@@ -115,15 +120,19 @@ export class Track {
 
     for (let i = 0; i < 3; i++) s[i].start = true;
 
-    // Roadside scenery.
+    // Roadside scenery, weighted per track. Weights need not sum to 100;
+    // whatever is left over is empty roadside.
     s[6].sprites.push({ kind: 'arch', offset: 0, variant: 0 });
     for (let i = 20; i < s.length - 10; i += 2 + Math.floor(rng() * 4)) {
-      const r = rng();
+      let r = rng() * 100;
       const side = sign();
-      if (r < 0.45) s[i].sprites.push({ kind: 'palm', offset: side * (1.3 + rng() * 1.6), variant: rng() });
-      else if (r < 0.62) s[i].sprites.push({ kind: 'bush', offset: side * (1.2 + rng() * 2), variant: rng() });
-      else if (r < 0.75) s[i].sprites.push({ kind: 'rock', offset: side * (1.4 + rng() * 2.2), variant: rng() });
-      else if (r < 0.8) s[i].sprites.push({ kind: 'sign', offset: side * 1.35, variant: rng() });
+      for (const [kind, weight, near, far] of def.scenery) {
+        if (r < weight) {
+          s[i].sprites.push({ kind, offset: side * (near + rng() * (far - near)), variant: rng() });
+          break;
+        }
+        r -= weight;
+      }
       if (i % 12 === 0) {
         s[i].sprites.push({ kind: 'post', offset: -1.12, variant: 0 });
         s[i].sprites.push({ kind: 'post', offset: 1.12, variant: 0 });

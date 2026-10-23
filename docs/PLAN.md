@@ -4,6 +4,8 @@ Working codename: **throttle**. Final name to be decided (shortlist: Revkick, Kn
 
 Live doc: https://claude.ai/artifact/4cRqQPkC7pjs8Pg8bYvcsX
 
+**Where we are (Oct 2026):** Phase 1 done, gate passed. Phase 2 core features built (tracks, bikes, career, police, garage, gamepad, PWA, saves, tests). Left for Phase 2: deploy, analytics, phone performance checks, comfort settings, music, balance. Live status is in [TASKS.md](TASKS.md).
+
 ## Summary
 
 A free browser game where you race motorbikes on open highways and punch rivals off their bikes. Anyone can play from a link in 5 seconds, and invite friends to race live. We build it in 4 phases, each with a gate we must pass before moving on.
@@ -67,7 +69,7 @@ React runs the screens around the game. The game itself runs in its own loop, so
 
 **Targets:** first load under 3 MB, playable in under 5 seconds on 4G, 60 fps on a 3 year old Android phone, live race lag under 100 ms in the same region.
 
-## Phase 1: Feel prototype (about 2 weeks)
+## Phase 1: Feel prototype (about 2 weeks). Done
 
 Goal: prove the game feels great in the hands before we build anything else.
 
@@ -75,13 +77,14 @@ Phase 1 uses TypeScript and Canvas 2D only, with no framework, so we can tune fe
 
 **Build**
 
-- [ ] Pseudo 3D road with curves, hills and one track
-- [ ] One bike with throttle, brake, steer, punch, kick
-- [ ] 6 AI rivals who race and fight back
-- [ ] Traffic cars and crashes
-- [ ] Knockout juice: shake, slow motion, sound
-- [ ] Keyboard and touch controls
-- [ ] Single page link, loads in under 5 seconds
+- [x] Pseudo 3D road with curves, hills and one track
+- [x] One bike with throttle, brake, steer, punch, kick
+- [x] 6 AI rivals who race and fight back
+- [x] Traffic cars and crashes
+- [x] Knockout juice: shake, slow motion, sound
+- [x] Keyboard and touch controls
+- [x] Single page link, loads in under 5 seconds
+- [x] Added during playtests: weapons, minimap, How to play, pause, first race hints, phone audio fix
 
 **Gate to Phase 2:** 20 testers play. At least 12 of 20 play 5 or more races in their first session without being asked.
 
@@ -89,15 +92,16 @@ Phase 1 uses TypeScript and Canvas 2D only, with no framework, so we can tune fe
 
 Goal: give players a reason to come back tomorrow.
 
-- [ ] Move to the full React, TypeScript, PixiJS project
-- [ ] 4 tracks: coast, desert, mountain pass, city at night
-- [ ] 5 bikes with upgrades (engine, tyres, armour)
-- [ ] Weapons: grab from rivals, limited uses
-- [ ] Cops that chase and arrest
-- [ ] Cash, loot drops, combo multiplier
-- [ ] Career mode: 5 levels, harder rivals each level
-- [ ] Gamepad support, PWA install
-- [ ] Guest save in the browser, optional sign in to sync
+- [x] Move to React and TypeScript. PixiJS deferred: Canvas 2D meets the frame budget (decision D1)
+- [x] 4 tracks: Sunset Coast, Red Mesa, Pine Pass, Neon Night
+- [x] 5 bikes with upgrades (engine, tyres, armour)
+- [x] Weapons: grab from rivals, limited uses
+- [x] Cops that chase and arrest
+- [x] Cash, loot drops, combo multiplier
+- [x] Career mode: 5 levels, harder rivals each level
+- [x] Gamepad support, PWA install
+- [x] Guest save in the browser with save codes. Sign in and sync moved to Phase 3, which brings the backend (decision D5)
+- [ ] Deploy, analytics, phone performance checks, comfort settings, music, balance (tasks P2-12 to P2-18)
 
 **Gate to Phase 3:** day 1 retention at 35 percent or more, average 8 races per player per day.
 

@@ -5,78 +5,59 @@ Browser motorbike combat racer. Race on open highways, punch and kick rivals off
 Working codename. The final name is not decided yet.
 
 - Plan: [docs/PLAN.md](docs/PLAN.md)
-- Current phase: **Phase 1, feel prototype**
+- Current phase: **Phase 2, full single player game** (core built, see [docs/TASKS.md](docs/TASKS.md))
 
 ## Run it
 
 ```bash
 npm install
 npm run dev            # local dev server with hot reload
-npm run build          # production build in dist/
+npm run check          # typecheck and tests
+npm run build          # hosted PWA build in dist/
 npm run build:single   # one self-contained HTML file in dist-single/ for test links
 ```
 
-Add `?debug` to the URL to show fps and expose `window.__game` for testing.
+Add `?debug` to the URL to expose `window.__game` and `window.__host` for testing.
 
 ## Controls
 
-| Action | Keyboard | Phone |
-| --- | --- | --- |
-| Steer | Left, Right (or A, D) | Hold the left pad, slide further to turn harder |
-| Throttle | Up (or W) | Automatic |
-| Brake | Down (or S) | BRAKE |
-| Punch | J (or Z) | PUNCH |
-| Kick | K (or X) | KICK |
-| Swing weapon | L (or C) | Weapon button, shown when you hold one |
-| Pause | P or Esc | Pause button, top center |
-| Mute | M | Speaker button |
-| Start, race again | Enter or Space | Tap the button |
-
-The same table is in the game under How to play.
-
-## Weapons
-
-Two riders start each race with a weapon. Knock one out to take it, or kick it loose (30 percent chance per kick).
-
-| Weapon | Damage | Reach | Swings |
+| Action | Keyboard | Phone | Gamepad |
 | --- | --- | --- | --- |
-| Club | 48 | 0.40 lane widths | 6 |
-| Chain | 38 | 0.52 lane widths | 8 |
+| Steer | Left, Right (or A, D) | Hold the left pad, slide further to turn harder | Left stick or d-pad |
+| Throttle | Up (or W) | Automatic | Right trigger |
+| Brake | Down (or S) | BRAKE | Left trigger |
+| Punch | J (or Z) | PUNCH | X |
+| Kick | K (or X) | KICK | A or B |
+| Swing weapon | L (or C) | Weapon button, shown when you hold one | Y |
+| Pause | P or Esc | Pause button, top center | Start |
+| Mute | M | Settings | |
+| Confirm on menus | Enter or Space | Tap | A |
 
-Riders who hold a weapon hit you 60 percent harder. A knocked out rider has a 25 percent chance to come back armed.
+## The game
 
-## HUD
+- **Career:** 5 levels (Rookie, Street, Pro, Outlaw, Legend). Finish in the top 3 on all 4 tracks to unlock the next level.
+- **Tracks:** Sunset Coast, Red Mesa, Pine Pass, Neon Night. Each is generated from a seed, so it is the same on every device.
+- **Garage:** 5 bikes and 3 upgrades (engine, tyres, armour) with 3 levels each, paid for with race cash.
+- **Weapons:** some riders carry a club (6 swings) or a chain (8 swings, longer reach). Knock them out to take it.
+- **Police:** from level 2. If they catch you crashed or crawling, you are busted: the race ends and you pay a fine.
+- **Saves:** progress stays on the device. Settings has a save code to move it to another device.
 
-- Top left: place, race time, health, weapon and swings left
-- Top center: race progress, pause, sound
-- Top right: speed, cash, track minimap (white dot is you, colored dots are rivals, checkered flag is the finish)
-- First 3 races show short hints that teach steering, fighting and weapons
+## Working on the code
 
-## How the code is laid out
+Start with [AGENTS.md](AGENTS.md). It has the setup, the rules and the task workflow for people and coding agents.
 
-| File | What it does |
+| Doc | What it holds |
 | --- | --- |
-| `src/config.ts` | All tuning numbers: speeds, sizes, counts |
-| `src/track.ts` | Builds the looped highway: curves, hills, roadside scenery |
-| `src/game.ts` | Simulation: player, 6 rival AIs, traffic, combat, combos, scoring |
-| `src/render.ts` | Pseudo 3D road renderer, sky, sprites, particles, HUD |
-| `src/sprites.ts` | Procedural art for riders, cars and scenery. No image files |
-| `src/audio.ts` | Synthesized engine, hits, crashes. No audio files |
-| `src/input.ts` | Keyboard input, touch steering pad, touch buttons |
-| `src/main.ts` | Screens, game loop, session stats |
+| [docs/PLAN.md](docs/PLAN.md) | Product plan and the 4 phases |
+| [docs/TASKS.md](docs/TASKS.md) | Task board with IDs, owners, status and acceptance criteria |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Layers, how a race runs, how to add a track or bike |
+| [docs/DECISIONS.md](docs/DECISIONS.md) | Decisions and the reasons behind them |
+| [docs/PLAYTEST.md](docs/PLAYTEST.md) | Phase gates and how to run a playtest |
 
-The game loop runs outside any UI framework so the frame rate stays steady. Phase 2 moves the screens to React and rendering to PixiJS, as set out in the plan.
+## Status
 
-## Phase 1 status
+- Phase 1, feel prototype: **done**, playtest gate passed.
+- Phase 2, full single player game: core features done (P2-01 to P2-11). Next: deploy, analytics, phone performance, comfort settings, music, balance.
+- Phase 3 and 4: drafted in [docs/TASKS.md](docs/TASKS.md).
 
-- [x] Pseudo 3D road with curves, hills and one track
-- [x] One bike with throttle, brake, steer, punch, kick
-- [x] 6 AI rivals who race and fight back
-- [x] Traffic cars, crashes, near miss bonus
-- [x] Knockout juice: hit stop, slow motion, screen shake, sparks, synthesized sound, phone vibration
-- [x] Keyboard and touch controls, with an analog steering pad on phones
-- [x] Weapons (club, chain), minimap, How to play screen, pause, first race hints
-- [x] Single page build: 58 KB, 21 KB gzipped
-- [ ] Playtest with 20 people (gate: 12 of 20 play 5 or more races in one session)
-
-Measured on the first build: races last 72 to 79 seconds, simulation costs under 0.1 ms per frame.
+Size: about 78 KB gzipped including React. 29 tests, including a bot that finishes a race on every track.

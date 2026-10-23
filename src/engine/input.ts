@@ -22,6 +22,11 @@ export class Input {
   private touchHeld = new Set<Btn>();
   private pressed = new Set<Btn>();
   private touchAxis = 0;
+  private padAxis = 0;
+  private padHeld = new Set<Btn>();
+  private padPrev = new Set<string>();
+  /** True when a gamepad is connected and has been used. */
+  gamepad = false;
   readonly touch: boolean;
   /** Last input came from the screen, not the keyboard. */
   lastTouch: boolean;
@@ -180,13 +185,61 @@ export class Input {
     document.querySelectorAll('.on').forEach((el) => el.classList.remove('on'));
   }
 
+  /**
+   * Read the first gamepad. Call once per frame. Standard mapping:
+   * left stick or d-pad steers, RT throttle, LT brake, X punch, A kick,
+   * Y weapon, Start pause, A or Start confirms on menus.
+   */
+  poll() {
+    let pads: (Gamepad | null)[] = [];
+    try {
+      pads = navigator.getGamepads?.() ?? [];
+    } catch {
+      return;
+    }
+    const gp = pads.find((p) => p && p.connected);
+    this.padHeld.clear();
+    this.padAxis = 0;
+    if (!gp) return;
+    const btn = (i: number) => !!gp.buttons[i] && (gp.buttons[i].pressed || gp.buttons[i].value > 0.5);
+    const stick = gp.axes[0] ?? 0;
+    let ax = Math.abs(stick) > 0.18 ? stick : 0;
+    if (btn(14)) ax = -1;
+    if (btn(15)) ax = 1;
+    this.padAxis = Math.max(-1, Math.min(1, ax));
+    const map: Array<[number, Btn]> = [
+      [7, 'up'],
+      [6, 'down'],
+      [2, 'punch'],
+      [0, 'kick'],
+      [1, 'kick'],
+      [3, 'weapon'],
+    ];
+    const now = new Set<string>();
+    for (const [i, b] of map) {
+      if (!btn(i)) continue;
+      now.add(`${i}`);
+      this.padHeld.add(b);
+      if (!this.padPrev.has(`${i}`)) this.pressed.add(b);
+    }
+    for (const i of [9, 0]) if (btn(i)) now.add(`m${i}`);
+    if (now.has('m9') && !this.padPrev.has('m9')) this.onPause?.();
+    if (now.has('m0') && !this.padPrev.has('m0')) this.onConfirm?.();
+    if (now.size > 0 || ax !== 0) {
+      this.gamepad = true;
+      this.lastTouch = false;
+    }
+    this.padPrev = now;
+  }
+
   isDown(b: Btn) {
-    return this.held.has(b) || this.touchHeld.has(b);
+    return this.held.has(b) || this.touchHeld.has(b) || this.padHeld.has(b);
   }
 
   /** Steering from -1 (full left) to 1 (full right). */
   axis() {
     if (this.touchAxis !== 0) return this.touchAxis;
+    if (this.padAxis !== 0) return this.padAxis;
     return (this.isDown('right') ? 1 : 0) - (this.isDown('left') ? 1 : 0);
   }
 

@@ -11,19 +11,43 @@ import {
   ROAD_W,
   SEG_LEN,
 } from './config';
-import { WEAPONS, type Car, type Game, type Rider, type Rival, type ScreenPos } from './game';
-import { drawArch, drawBush, drawCar, drawPalm, drawPost, drawRider, drawRock, drawSign, type RiderLook } from './sprites';
+import type { Palette, TrackDef } from '../content/tracks';
+import { WEAPONS, type Car, type Cop, type Game, type Rider, type Rival, type ScreenPos } from './game';
+import {
+  drawArch,
+  drawBuilding,
+  drawBush,
+  drawCactus,
+  drawCar,
+  drawLamp,
+  drawPalm,
+  drawPine,
+  drawPost,
+  drawRider,
+  drawRock,
+  drawSign,
+  type RiderLook,
+} from './sprites';
 import type { Pt, Segment, Sprite } from './track';
 import { hex, lerp, mix, mod, mulberry32, ordinal, type RGB } from './util';
 
-const C = {
-  fog: hex('#f2b48a'),
-  road: [hex('#5c5a5e'), hex('#545256')] as RGB[],
-  grass: [hex('#c9b27c'), hex('#bea672')] as RGB[],
-  rumble: [hex('#f4f4f4'), hex('#d23b2f')] as RGB[],
-  lane: hex('#eeeeee'),
+interface RoadColors {
+  fog: RGB;
+  road: RGB[];
+  ground: RGB[];
+  rumble: RGB[];
+  lane: RGB;
+  start: RGB;
+}
+
+const roadColors = (p: Palette): RoadColors => ({
+  fog: hex(p.fog),
+  road: p.road.map(hex),
+  ground: p.ground.map(hex),
+  rumble: p.rumble.map(hex),
+  lane: hex(p.lane),
   start: hex('#ffffff'),
-};
+});
 
 const SPRITE_W: Record<Sprite['kind'], number> = {
   palm: 700,
@@ -32,6 +56,10 @@ const SPRITE_W: Record<Sprite['kind'], number> = {
   sign: 1100,
   post: 60,
   arch: ROAD_W * 2.3,
+  cactus: 520,
+  pine: 760,
+  building: 1500,
+  lamp: 110,
 };
 
 interface Particle {
@@ -50,7 +78,8 @@ interface Particle {
 type Drawable =
   | { kind: 'sprite'; s: Sprite }
   | { kind: 'car'; c: Car }
-  | { kind: 'rival'; r: Rival };
+  | { kind: 'rival'; r: Rival }
+  | { kind: 'cop'; c: Cop };
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -62,6 +91,10 @@ export class Renderer {
   private parts: Particle[] = [];
   private buckets: Drawable[][] = Array.from({ length: DRAW_DIST }, () => []);
   private ridges: number[][];
+  private stars: Array<[number, number, number]> = [];
+  private def: TrackDef | null = null;
+  private C: RoadColors | null = null;
+  private night = false;
   private lines: Array<{ a: number; r: number; len: number; speed: number }> = [];
 
   constructor(private canvas: HTMLCanvasElement) {
@@ -79,6 +112,7 @@ export class Renderer {
       }
       return pts;
     });
+    for (let i = 0; i < 90; i++) this.stars.push([rng(), rng() * 0.5, rng()]);
     for (let i = 0; i < 40; i++) this.lines.push({ a: Math.random() * Math.PI * 2, r: Math.random(), len: 0.1 + Math.random() * 0.2, speed: 1 + Math.random() });
     this.resize();
   }
@@ -123,6 +157,11 @@ export class Renderer {
     const speedPct = p.speed / MAX_SPEED;
 
     this.skyOffset += pSeg.curve * speedPct * dt * 0.0015;
+    if (this.def !== g.track.def) {
+      this.def = g.track.def;
+      this.C = roadColors(this.def.palette);
+      this.night = !!this.def.palette.night;
+    }
 
     ctx.save();
     if (g.shake > 0) ctx.translate((Math.random() - 0.5) * g.shake * (w / 800), (Math.random() - 0.5) * g.shake * (w / 800));
@@ -147,6 +186,12 @@ export class Renderer {
       if (g.phase === 'title') continue;
       const n = bucketOf(mod(r.d, L));
       if (n > 0 && n >= pBucketEarly - 1) this.buckets[n].push({ kind: 'rival', r });
+    }
+    const cop = g.cop;
+    cop.visible = false;
+    if (cop.active && g.phase !== 'title') {
+      const n = bucketOf(mod(cop.d, L));
+      if (n > 0 && n >= pBucketEarly - 1) this.buckets[n].push({ kind: 'cop', c: cop });
     }
 
     // Road, front to back, with hill occlusion.
@@ -202,7 +247,13 @@ export class Renderer {
         this.clipped(seg.clip, s1.y, () => this.drawSprite(sp, sx, s1.y, sw), fogA);
       }
       for (const d of this.buckets[n]) {
-        if (d.kind === 'car') this.drawEntity(seg, d.c, d.c.z, d.c.x, CAR_WORLD_W, fogA, (ex, ey, ew) => drawCar(ctx, ex, ey, ew, d.c.color, d.c.kind));
+        if (d.kind === 'car') this.drawEntity(seg, d.c, d.c.z, d.c.x, CAR_WORLD_W, fogA, (ex, ey, ew) => drawCar(ctx, ex, ey, ew, d.c.color, d.c.kind, this.night));
+        else if (d.kind === 'cop') {
+          const c = d.c;
+          this.drawEntity(seg, c, mod(c.d, L), c.x, BIKE_WORLD_W, fogA, (ex, ey, ew) =>
+            drawRider(ctx, ex, ey, ew, { ...this.look(c, '#eef1f6', '#eef1f6'), jacket: '#1f3a7a', cop: true, time: g.clock }),
+          );
+        }
         else if (d.kind === 'rival') {
           const r = d.r;
           this.drawEntity(seg, r, mod(r.d, L), r.x, BIKE_WORLD_W, fogA, (ex, ey, ew) => drawRider(ctx, ex, ey, ew, this.look(r, r.color, r.helmet)));
@@ -310,6 +361,13 @@ export class Renderer {
       ctx.arc(px(m), py(m), dot, 0, Math.PI * 2);
       ctx.fill();
     }
+    if (g.cop.active && !g.cop.down) {
+      const m = g.track.mapAt(g.cop.d);
+      ctx.fillStyle = Math.floor(g.clock * 6) % 2 ? '#ff3b3b' : '#4a7dff';
+      ctx.beginPath();
+      ctx.arc(px(m), py(m), dot * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
     const me = g.track.mapAt(g.player.d);
     ctx.fillStyle = '#fff';
     ctx.strokeStyle = '#1d1438';
@@ -415,42 +473,91 @@ export class Renderer {
         return drawPost(ctx, x, y, w);
       case 'arch':
         return drawArch(ctx, x, y, w);
+      case 'cactus':
+        return drawCactus(ctx, x, y, w, sp.variant);
+      case 'pine':
+        return drawPine(ctx, x, y, w, sp.variant);
+      case 'building':
+        return drawBuilding(ctx, x, y, w, sp.variant);
+      case 'lamp':
+        // The arm always reaches over the road.
+        return drawLamp(ctx, x, y, w, sp.offset < 0 ? 0.9 : 0.1);
     }
   }
 
   private drawSky(playerY: number) {
     const ctx = this.ctx;
     const { w, h } = this;
+    const pal = this.def?.palette;
+    if (!pal) return;
     const sky = ctx.createLinearGradient(0, 0, 0, h * 0.6);
-    sky.addColorStop(0, '#2b2257');
-    sky.addColorStop(0.45, '#b4506e');
-    sky.addColorStop(0.8, '#f08a5d');
-    sky.addColorStop(1, '#f6c08f');
+    sky.addColorStop(0, pal.sky[0]);
+    sky.addColorStop(0.45, pal.sky[1]);
+    sky.addColorStop(0.8, pal.sky[2]);
+    sky.addColorStop(1, pal.sky[3]);
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, w, h);
 
-    // Sun.
-    const sx = w * (0.5 + ((this.skyOffset * 3) % 1) - 0.5);
-    const sy = h * 0.4;
-    const sun = ctx.createRadialGradient(sx, sy, 0, sx, sy, h * 0.18);
-    sun.addColorStop(0, 'rgba(255,240,190,1)');
-    sun.addColorStop(0.5, 'rgba(255,200,120,0.9)');
-    sun.addColorStop(1, 'rgba(255,170,90,0)');
-    ctx.fillStyle = sun;
-    ctx.fillRect(sx - h * 0.2, sy - h * 0.2, h * 0.4, h * 0.4);
+    if (pal.night) {
+      for (const [x, y, b] of this.stars) {
+        ctx.fillStyle = `rgba(255,255,255,${0.3 + b * 0.6})`;
+        const sz = Math.max(1, (w / 900) * (1 + b));
+        ctx.fillRect(((x + this.skyOffset * 0.3) % 1) * w, y * h, sz, sz);
+      }
+    }
 
-    // Ridges with parallax. Hills shift them up and down a little.
-    const colors = ['#7d4a6e', '#a35a68', '#c8735f'];
+    // Sun or moon, drifting with the curves.
+    const sx = w * (0.5 + ((this.skyOffset * 3) % 1) - 0.5);
+    const sy = h * (pal.sun === 'moon' ? 0.2 : 0.4);
+    const r = h * (pal.sun === 'sun' ? 0.18 : 0.1);
+    const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+    if (pal.sun === 'sun') {
+      glow.addColorStop(0, 'rgba(255,240,190,1)');
+      glow.addColorStop(0.5, 'rgba(255,200,120,0.9)');
+      glow.addColorStop(1, 'rgba(255,170,90,0)');
+    } else if (pal.sun === 'pale') {
+      glow.addColorStop(0, 'rgba(255,252,240,0.95)');
+      glow.addColorStop(0.35, 'rgba(255,245,220,0.6)');
+      glow.addColorStop(1, 'rgba(255,245,220,0)');
+    } else {
+      glow.addColorStop(0, 'rgba(240,240,255,1)');
+      glow.addColorStop(0.3, 'rgba(220,225,255,0.9)');
+      glow.addColorStop(0.35, 'rgba(180,190,255,0.25)');
+      glow.addColorStop(1, 'rgba(180,190,255,0)');
+    }
+    ctx.fillStyle = glow;
+    ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+
+    // Ridges with parallax, or a city skyline. Hills shift them up and down a little.
     const lift = playerY / 30000;
     this.ridges.forEach((pts, layer) => {
       const speed = [0.6, 1, 1.6][layer];
       const off = (this.skyOffset * speed) % 1;
       const baseY = h * (0.5 + layer * 0.025) + lift * h * (layer + 1) * 0.03;
       const amp = h * (0.16 - layer * 0.035);
-      ctx.fillStyle = colors[layer];
+      ctx.fillStyle = pal.ridges[layer];
+      const n = pts.length;
+      if (pal.skyline) {
+        // Blocks: one tower per point, with a few lit windows on the nearest layer.
+        const cols = 24 + layer * 6;
+        const bw = w / cols;
+        const shift = off * bw * cols;
+        for (let i = -1; i <= cols; i++) {
+          const idx = ((i + Math.floor(shift / bw)) % n + n) % n;
+          const x = i * bw - (shift % bw);
+          const top = baseY - pts[idx] * amp * 1.3;
+          ctx.fillStyle = pal.ridges[layer];
+          ctx.fillRect(x, top, bw + 1, h - top);
+          if (layer === 2 && bw > 12) {
+            ctx.fillStyle = 'rgba(255,215,120,0.55)';
+            for (let yy = top + bw * 0.4; yy < baseY; yy += bw * 0.5)
+              if ((idx * 7 + Math.floor(yy)) % 3 === 0) ctx.fillRect(x + bw * 0.3, yy, bw * 0.15, bw * 0.15);
+          }
+        }
+        return;
+      }
       ctx.beginPath();
       ctx.moveTo(0, h);
-      const n = pts.length;
       for (let i = 0; i <= 32; i++) {
         const u = i / 32 + off;
         const f = (u * n) % n;
@@ -483,7 +590,9 @@ export class Renderer {
     const k = seg.dark ? 1 : 0;
     const f = 1 - fog;
     const ctx = this.ctx;
-    ctx.fillStyle = mix(C.grass[k], C.fog, f);
+    const C = this.C;
+    if (!C) return;
+    ctx.fillStyle = mix(C.ground[k], C.fog, f);
     ctx.fillRect(0, b.y, w, a.y - b.y);
 
     const r1 = a.w / 9;
@@ -637,11 +746,19 @@ export class Renderer {
     const hy = pad + u * 14;
     ctx.fillStyle = 'rgba(0,0,0,0.45)';
     ctx.fillRect(pad, hy, hw, u * 1.6);
-    const hp = Math.max(0, g.player.hp) / 100;
+    const hp = Math.max(0, g.player.hp) / g.player.hpMax;
     ctx.fillStyle = hp > 0.4 ? '#4fe07a' : '#ff5a3c';
     ctx.fillRect(pad, hy, hw * hp, u * 1.6);
 
     this.weaponSlot(g, pad, hy + u * 2.6, u);
+
+    // Police warning while they chase from behind.
+    const cop = g.cop;
+    const copGap = cop.d - g.player.d;
+    if (cop.active && !cop.down && copGap < -250 && copGap > -6000 && g.phase === 'race') {
+      const blink = Math.floor(g.clock * 4) % 2 === 0;
+      this.text(`POLICE ${Math.round(-copGap / 20)} m behind`, w / 2, h * 0.2, u * 2.8, blink ? '#7fb8ff' : '#ff6b6b', 'center', 900);
+    }
     const ms = Math.min(u * 20, h * 0.2);
     this.minimap(g, w - pad - ms, pad + u * 13.5, ms);
 
