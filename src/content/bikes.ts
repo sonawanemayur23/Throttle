@@ -7,6 +7,8 @@ export const MAX_UPGRADE = 3;
 export interface BikeDef {
   id: string;
   name: string;
+  /** Short class label shown in the garage. */
+  klass: string;
   blurb: string;
   price: number;
   /** Multipliers on the base bike. 1 = the starter bike's stock value. */
@@ -20,11 +22,11 @@ export interface BikeDef {
 }
 
 export const BIKES: BikeDef[] = [
-  { id: 'sparrow', name: 'Sparrow 250', blurb: 'Light and forgiving. Every rider starts here.', price: 0, speed: 0.92, accel: 0.95, handling: 1.05, armour: 1, color: '#16181d', upgradeBase: 1500 },
-  { id: 'kestrel', name: 'Kestrel 600', blurb: 'Quicker off the line and steady in a fight.', price: 18000, speed: 1, accel: 1.05, handling: 1.05, armour: 1.05, color: '#1e5fbf', upgradeBase: 3000 },
-  { id: 'bison', name: 'Bison 900', blurb: 'Heavy cruiser. Slow to turn, shrugs off hits.', price: 32000, speed: 1.03, accel: 0.95, handling: 0.88, armour: 1.45, color: '#7a3b1d', upgradeBase: 4500 },
-  { id: 'shrike', name: 'Shrike 1000', blurb: 'Sharp sport bike. Fast, nimble, fragile.', price: 55000, speed: 1.1, accel: 1.15, handling: 1.12, armour: 0.9, color: '#c71f2d', upgradeBase: 7000 },
-  { id: 'nightjar', name: 'Nightjar R', blurb: 'The top of the line. Fast everywhere.', price: 95000, speed: 1.16, accel: 1.2, handling: 1.12, armour: 1.15, color: '#5b2a9e', upgradeBase: 11000 },
+  { id: 'sparrow', name: 'Sparrow 250', klass: 'Naked 250cc', blurb: 'Light and forgiving. Every rider starts here.', price: 0, speed: 0.92, accel: 0.95, handling: 1.05, armour: 1, color: '#16181d', upgradeBase: 1500 },
+  { id: 'kestrel', name: 'Kestrel 600', klass: 'Sport tourer 600cc', blurb: 'Quicker off the line and steady in a fight.', price: 18000, speed: 1, accel: 1.05, handling: 1.05, armour: 1.05, color: '#1e5fbf', upgradeBase: 3000 },
+  { id: 'bison', name: 'Bison 900', klass: 'Cruiser 900cc', blurb: 'Heavy cruiser. Slow to turn, shrugs off hits.', price: 32000, speed: 1.03, accel: 0.95, handling: 0.88, armour: 1.45, color: '#7a3b1d', upgradeBase: 4500 },
+  { id: 'shrike', name: 'Shrike 1000', klass: 'Superbike 1000cc', blurb: 'Sharp sport bike. Fast, nimble, fragile.', price: 55000, speed: 1.1, accel: 1.15, handling: 1.12, armour: 0.9, color: '#c71f2d', upgradeBase: 7000 },
+  { id: 'nightjar', name: 'Nightjar R', klass: 'Hypersport 1200cc', blurb: 'The top of the line. Fast everywhere.', price: 95000, speed: 1.16, accel: 1.2, handling: 1.12, armour: 1.15, color: '#5b2a9e', upgradeBase: 11000 },
 ];
 
 export const UPGRADE_INFO: Record<UpgradeKind, { label: string; effect: string }> = {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { GameHost } from '../../app/host';
 import { exportCode, importCode, newSave, type SaveData } from '../../save/save';
+import { TopNav } from '../parts';
 
 interface Props {
   save: SaveData;
@@ -44,54 +45,48 @@ export function Settings({ save, setSave, host, onBack }: Props) {
   };
 
   return (
-    <div className="screen panel solid">
-      <div className="card wide">
-        <header className="bar">
-          <button type="button" className="back" onClick={onBack} aria-label="Back">
-            &larr;
+    <div className="scr solid">
+      <div className="wrap narrow">
+        <TopNav title="Settings" onBack={onBack} />
+
+        <label className="switch" htmlFor="setSound">
+          <span>Sound</span>
+          <input id="setSound" type="checkbox" checked={!save.settings.muted} onChange={() => toggle('muted')} />
+        </label>
+        <label className="switch" htmlFor="setHints">
+          <span>Hints in the first 3 races</span>
+          <input id="setHints" type="checkbox" checked={save.settings.hints} onChange={() => toggle('hints')} />
+        </label>
+
+        <div className="panel group">
+          <h3 className="display">Move your progress</h3>
+          <p className="muted small">Copy this code here, then paste it on your other device. Accounts that sync on their own come later.</p>
+          <textarea id="myCode" readOnly value={myCode} rows={2} onFocus={(e) => e.currentTarget.select()} />
+          <button type="button" className="btn alt" onClick={copy}>
+            Copy code
           </button>
-          <h2 className="h-small">Settings</h2>
-          <span />
-        </header>
-
-        <div className="settings">
-          <label className="switch">
-            <input id="setSound" type="checkbox" checked={!save.settings.muted} onChange={() => toggle('muted')} />
-            <span>Sound</span>
+          <label htmlFor="loadCode" className="small muted">
+            Paste a code from another device
           </label>
-          <label className="switch">
-            <input id="setHints" type="checkbox" checked={save.settings.hints} onChange={() => toggle('hints')} />
-            <span>Hints in the first 3 races</span>
-          </label>
+          <textarea id="loadCode" value={code} onChange={(e) => setCode(e.target.value)} rows={2} placeholder="Paste code here" />
+          <button type="button" className="btn alt" onClick={load} disabled={!code.trim()}>
+            Load progress
+          </button>
+        </div>
 
-          <div className="group">
-            <b>Move your progress to another device</b>
-            <p className="muted">Copy this code on this device, then paste it on the other one. Accounts that sync on their own come later.</p>
-            <textarea id="myCode" readOnly value={myCode} rows={2} onFocus={(e) => e.currentTarget.select()} />
-            <button type="button" className="ghost" onClick={copy}>
-              Copy code
+        <div className="panel group">
+          <h3 className="display">Start over</h3>
+          {!confirmReset ? (
+            <button type="button" className="btn alt danger" onClick={() => setConfirmReset(true)}>
+              Reset all progress
             </button>
-            <label htmlFor="loadCode" className="muted">
-              Paste a code from another device
-            </label>
-            <textarea id="loadCode" value={code} onChange={(e) => setCode(e.target.value)} rows={2} placeholder="Paste code here" />
-            <button type="button" className="ghost" onClick={load} disabled={!code.trim()}>
-              Load progress
-            </button>
-          </div>
-
-          <div className="group">
-            <b>Start over</b>
-            {!confirmReset ? (
-              <button type="button" className="ghost danger" onClick={() => setConfirmReset(true)}>
-                Reset all progress
-              </button>
-            ) : (
+          ) : (
+            <>
+              <p className="small">This deletes your cash, bikes and career on this device.</p>
               <div className="row">
-                <span className="muted">This deletes your cash, bikes and career on this device.</span>
                 <button
                   type="button"
-                  className="ghost danger"
+                  className="btn alt danger"
                   onClick={() => {
                     setSave(newSave());
                     setConfirmReset(false);
@@ -100,17 +95,17 @@ export function Settings({ save, setSave, host, onBack }: Props) {
                 >
                   Yes, reset
                 </button>
-                <button type="button" className="ghost" onClick={() => setConfirmReset(false)}>
-                  Keep my progress
+                <button type="button" className="btn alt" onClick={() => setConfirmReset(false)}>
+                  Keep progress
                 </button>
               </div>
-            )}
-          </div>
-          <p className="msg" role="status">
-            {status}
-          </p>
+            </>
+          )}
         </div>
-        <button type="button" className="cta" data-primary onClick={onBack}>
+        <p className="msg" role="status">
+          {status}
+        </p>
+        <button type="button" className="btn wide" data-primary onClick={onBack}>
           Done
         </button>
       </div>

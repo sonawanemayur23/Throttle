@@ -97,7 +97,11 @@ export class Renderer {
   private night = false;
   private lines: Array<{ a: number; r: number; len: number; speed: number }> = [];
 
-  constructor(private canvas: HTMLCanvasElement) {
+  /** Pass `fixed` to draw at a set size (track previews) instead of filling the window. */
+  constructor(
+    private canvas: HTMLCanvasElement,
+    private fixed?: { width: number; height: number },
+  ) {
     const ctx = canvas.getContext('2d', { alpha: false });
     if (!ctx) throw new Error('Canvas 2D is not supported');
     this.ctx = ctx;
@@ -118,6 +122,14 @@ export class Renderer {
   }
 
   resize() {
+    if (this.fixed) {
+      this.canvas.width = this.fixed.width;
+      this.canvas.height = this.fixed.height;
+      this.w = this.fixed.width;
+      this.h = this.fixed.height;
+      this.kx = Math.max(this.w, this.h * 1.35) / 2;
+      return;
+    }
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const cw = window.innerWidth;
     const ch = window.innerHeight;

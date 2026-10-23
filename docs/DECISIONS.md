@@ -33,3 +33,11 @@ No names, art, music or characters from Road Rash or other games, and no real bi
 - `vite`, `@vitejs/plugin-react`, `typescript`: build.
 - `vite-plugin-singlefile`: one-file playtest builds.
 - `vitest`: tests.
+
+## D8. Two typefaces from Google Fonts (Oct 2026)
+
+Menus use Saira Condensed (display, 700 to 900) and Saira (body, 400 to 700). They read like motorsport livery and stay legible at small sizes on phones. Loaded from Google Fonts with `display=swap`, so text shows at once in a fallback face (Arial Narrow, Roboto Condensed, system) and swaps when the font arrives. About 60 KB, cached after the first visit. No font files in the repo.
+
+## D9. Garage art as inline SVG (Oct 2026)
+
+Bikes and upgrade parts in the garage are drawn as SVG React components (`src/ui/art/`), one silhouette per bike class. Upgrades show on the bike itself: tyre stripes, exhaust can and flame, armour sliders and plates. SVG stays sharp on every screen, adds a few KB, and needs no image files (in line with D3).
