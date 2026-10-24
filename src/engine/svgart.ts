@@ -10,6 +10,16 @@ import carSedan from '../art/car-sedan.svg?raw';
 import coastPalm from '../art/coast-palm-tall.svg?raw';
 import coastRock from '../art/coast-rock.svg?raw';
 import mountainPine from '../art/mountain-pine-tall.svg?raw';
+import riderRide from '../art/rider-ride.svg?raw';
+import riderPunch from '../art/rider-punch.svg?raw';
+import riderKick from '../art/rider-kick.svg?raw';
+import riderHurt from '../art/rider-hurt.svg?raw';
+import riderClubHold from '../art/rider-club-hold.svg?raw';
+import riderClubSwing from '../art/rider-club-swing.svg?raw';
+import riderChainHold from '../art/rider-chain-hold.svg?raw';
+import riderChainSwing from '../art/rider-chain-swing.svg?raw';
+import riderCrashA from '../art/rider-crash-a.svg?raw';
+import riderCrashB from '../art/rider-crash-b.svg?raw';
 
 export interface ArtDef {
   svg: string;
@@ -29,12 +39,28 @@ function def(svg: string, fit: number): ArtDef {
   return { svg, vw: Number(m[1]), vh: Number(m[2]), fit };
 }
 
+/**
+ * Riders: the bike tail spans 160 of the 400 px box. The code-drawn rider's
+ * tail is about 0.58 of the sprite width, so the box is 1.45 sprite widths.
+ */
+const RIDER_FIT = (400 / 160) * 0.58;
+
 /** The art the game ships. Keys are asset names; see docs/ART.md. */
 export const ART = {
   'car-sedan': def(carSedan, 480 / 400),
   'coast-palm-tall': def(coastPalm, 1.7),
   'mountain-pine-tall': def(mountainPine, 1.2),
   'coast-rock': def(coastRock, 1.05),
+  'rider-ride': def(riderRide, RIDER_FIT),
+  'rider-punch': def(riderPunch, RIDER_FIT),
+  'rider-kick': def(riderKick, RIDER_FIT),
+  'rider-hurt': def(riderHurt, RIDER_FIT),
+  'rider-club-hold': def(riderClubHold, RIDER_FIT),
+  'rider-club-swing': def(riderClubSwing, RIDER_FIT),
+  'rider-chain-hold': def(riderChainHold, RIDER_FIT),
+  'rider-chain-swing': def(riderChainSwing, RIDER_FIT),
+  'rider-crash-a': def(riderCrashA, RIDER_FIT),
+  'rider-crash-b': def(riderCrashB, RIDER_FIT),
 } satisfies Record<string, ArtDef>;
 
 export type ArtName = keyof typeof ART;
@@ -75,6 +101,11 @@ export class SvgArt {
   /** Start loading the base images so the first race already has art. */
   preload(names: ArtName[] = Object.keys(ART) as ArtName[]) {
     for (const n of names) this.image(n, {});
+  }
+
+  /** Start decoding these assets in these colors before they are needed. */
+  warm(names: ArtName[], paints: Paint[]) {
+    for (const n of names) for (const p of paints) this.image(n, p);
   }
 
   private image(name: ArtName, paint: Paint) {

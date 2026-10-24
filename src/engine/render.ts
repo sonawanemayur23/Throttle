@@ -30,7 +30,9 @@ import {
 } from './sprites';
 import type { Pt, Segment, Sprite } from './track';
 import { SpriteCache } from './art';
-import { svgArt, type ArtName } from './svgart';
+import { ART, svgArt, type ArtName } from './svgart';
+
+const RIDER_POSES = (Object.keys(ART) as ArtName[]).filter((n) => n.startsWith('rider-'));
 
 /** Scenery drawn from SVG art instead of the cached code-drawn stamps. */
 const SVG_SCENERY: Partial<Record<Sprite['kind'], ArtName>> = {
@@ -39,6 +41,8 @@ const SVG_SCENERY: Partial<Record<Sprite['kind'], ArtName>> = {
   rock: 'coast-rock',
 };
 const OUTLINE = '#14101F';
+const PLAYER_JACKET = '#2b2f3a';
+const PLAYER_HELMET = '#f2f2f2';
 import { hex, lerp, mix, mod, mulberry32, ordinal, type RGB } from './util';
 
 const HUD_FONT = '"Saira Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif';
@@ -188,8 +192,23 @@ export class Renderer {
     p.screen.w = Math.round(p.screen.scale * ROAD_W * this.kx);
   }
 
+  private warmedRiders = '';
+
+  /** Decode every rider pose in every rider's colors once per race setup. */
+  private warmRiders(g: Game) {
+    const key = g.setup.bike.color + g.rivals.map((r) => r.color).join('');
+    if (key === this.warmedRiders) return;
+    this.warmedRiders = key;
+    const paints = [
+      { body: g.setup.bike.color, jacket: PLAYER_JACKET, helmet: PLAYER_HELMET },
+      ...g.rivals.map((r) => ({ body: r.color, jacket: r.color, helmet: r.helmet })),
+    ];
+    svgArt.warm(RIDER_POSES, paints);
+  }
+
   render(g: Game, dt: number) {
     const ctx = this.ctx;
+    this.warmRiders(g);
     const { w, h } = this;
     const L = g.L;
     const p = g.player;
@@ -281,7 +300,7 @@ export class Renderer {
       playerDrawn = true;
       const inv = (p as Rider & { invuln: number }).invuln;
       if (inv > 0 && !p.down && Math.floor(g.clock * 16) % 2 === 1) return;
-      drawRider(ctx, w / 2, py + bounce, pw, { ...this.look(p, g.setup.bike.color, '#f2f2f2'), jacket: '#2b2f3a', player: true, night: this.night, speed: speedPct });
+      drawRider(ctx, w / 2, py + bounce, pw, { ...this.look(p, g.setup.bike.color, PLAYER_HELMET), jacket: PLAYER_JACKET, player: true, night: this.night, speed: speedPct });
     };
 
     if (this.night && g.phase !== 'title') this.headlight(py, pw);

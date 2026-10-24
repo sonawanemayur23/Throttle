@@ -37,7 +37,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-21 | Garage art and menu redesign | done | Claude | |
 | P2-22 | In-race graphics overhaul | done | Claude | P2-21 |
 | P2-23 | SVG art pipeline and board look | done | Claude | P2-22 |
-| P2-24 | Riders from Prompt 2 art | blocked | Claude | P2-23, art from Mayur |
+| P2-24 | Riders from Prompt 2 art | done | Claude | P2-23 |
 | P2-25 | Police and traffic from Prompt 3 art | blocked | Claude | P2-23, art from Mayur |
 | P2-26 | Props and horizons from Prompts 4 to 6 | blocked | Claude | P2-23, art from Mayur |
 | P2-27 | Garage art and icons from Prompts 7 and 8 | blocked | Claude | P2-23, art from Mayur |
@@ -151,6 +151,7 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 
 ## Notes
 
+- P2-24, Oct 2026: 10 rider poses from Prompt 2 in game (ride, punch, kick, hurt, club and chain hold and swing, two crash poses), mirrored for the left, repainted per rider, preloaded per race. This art came from the earlier Prompt 2 text (big helmet, 160 px tail); rerunning the updated Prompt 2 only needs the 10 files replaced. Police stay code-drawn until Prompt 3.
 - P2-23, Oct 2026: SVG art pipeline (repaint by color keys, rasterize once per size bucket, stamp with fallback), clean-svg import script, art tests, board car, palm, pine and rock in game, flat banded sky, striped sun, flat moon, outlined ridges.
 - P2-22, Oct 2026: cached high-detail scenery, shaded riders and cars with glowing lights, tyre tracks, edge lines, kerb shoulders, tinted clouds, ridge gradients, horizon haze, night headlight and road studs, additive sparks, vignette, HUD plates. Steady render 6 to 12 ms on desktop without a GPU. Fixed: the player's bike color was always black in races.
 - P2-21, Oct 2026: SVG art for 5 bikes and 3 parts, new menu design (Saira type, angled panels), engine-rendered track previews.
