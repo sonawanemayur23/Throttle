@@ -147,6 +147,33 @@ const RIVAL_DEFS: Array<[string, string, string]> = [
   ['Rook', '#20b36b', '#e8e8e8'],
   ['Jax', '#e83c8c', '#2b2b2b'],
 ];
+/**
+ * Traffic kinds, in the order the renderer draws them: sedan, hatchback, SUV,
+ * van, pickup, semi truck. Weights set how common each one is.
+ */
+export const CAR_KINDS = [
+  { weight: 26, speed: [0.24, 0.48] },
+  { weight: 20, speed: [0.24, 0.48] },
+  { weight: 18, speed: [0.22, 0.44] },
+  { weight: 14, speed: [0.2, 0.38] },
+  { weight: 14, speed: [0.22, 0.42] },
+  { weight: 8, speed: [0.18, 0.3] },
+] as const;
+const TRUCK = 5;
+
+/** Half width of a vehicle in road units. The semi is 1.35 times a car. */
+export const carHalf = (c: { kind: number }) => (c.kind === TRUCK ? CAR_HALF * 1.35 : CAR_HALF);
+
+function pickKind() {
+  const total = CAR_KINDS.reduce((a, k) => a + k.weight, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < CAR_KINDS.length; i++) {
+    r -= CAR_KINDS[i].weight;
+    if (r < 0) return i;
+  }
+  return 0;
+}
+
 const CAR_COLORS = ['#d9d9d9', '#3a6ea5', '#b23a3a', '#2e2e2e', '#e0c341', '#4f8f5b', '#f2f2f2', '#7a4fa0'];
 
 const newRider = (d: number, x: number, hp = 100): Rider => ({
@@ -289,15 +316,18 @@ export class Game {
       this.cars.push({
         z: 6000 + Math.random() * (this.L - 9000),
         x: lane,
-        speed: MAX_SPEED * (0.22 + Math.random() * 0.25),
+        speed: 0,
         color: CAR_COLORS[Math.floor(Math.random() * CAR_COLORS.length)],
-        kind: Math.floor(Math.random() * 3),
+        kind: pickKind(),
         prevDz: 0,
         sx: 0,
         sy: 0,
         sw: 0,
         visible: false,
       });
+      const c = this.cars[this.cars.length - 1];
+      const [lo, hi] = CAR_KINDS[c.kind].speed;
+      c.speed = MAX_SPEED * (lo + Math.random() * (hi - lo));
     }
     this.raceTime = 0;
     this.combo = 0;
@@ -672,11 +702,12 @@ export class Game {
     for (const c of this.cars) {
       const dz = loopDiff(c.z, rz, this.L);
       if (dz <= 0 || dz > 1800) continue;
-      if (Math.abs(c.x - r.x) < 0.38) {
-        aim.x = c.x > r.x ? c.x - 0.48 : c.x + 0.48;
-        if (dz < 500 && Math.abs(c.x - r.x) < 0.27) aim.speed = Math.min(aim.speed, c.speed);
+      const extra = carHalf(c) - CAR_HALF;
+      if (Math.abs(c.x - r.x) < 0.38 + extra) {
+        aim.x = c.x > r.x ? c.x - 0.48 - extra : c.x + 0.48 + extra;
+        if (dz < 500 && Math.abs(c.x - r.x) < 0.27 + extra) aim.speed = Math.min(aim.speed, c.speed);
       }
-      if (dz < 90 && Math.abs(c.x - r.x) < CAR_HALF + BIKE_HALF && r.speed > c.speed + 1500) return true;
+      if (dz < 90 && Math.abs(c.x - r.x) < carHalf(c) + BIKE_HALF && r.speed > c.speed + 1500) return true;
     }
     return false;
   }
@@ -838,7 +869,7 @@ export class Game {
       }
       const dz = loopDiff(c.z, pz, this.L);
       const dx = Math.abs(c.x - p.x);
-      if (dz > -40 && dz < 100 && dx < CAR_HALF + BIKE_HALF && p.speed > c.speed) {
+      if (dz > -40 && dz < 100 && dx < carHalf(c) + BIKE_HALF && p.speed > c.speed) {
         if (p.invuln > 0) {
           p.speed = c.speed * 0.9;
         } else if (p.speed > MAX_SPEED * 0.5) {
@@ -849,7 +880,7 @@ export class Game {
           this.shake = Math.max(this.shake, 9);
           this.sound.hurt();
         }
-      } else if (c.prevDz > 0 && dz <= 0 && dz > -SEG_LEN * 3 && dx < 0.48 && p.speed > MAX_SPEED * 0.6) {
+      } else if (c.prevDz > 0 && dz <= 0 && dz > -SEG_LEN * 3 && dx < 0.28 + carHalf(c) && p.speed > MAX_SPEED * 0.6) {
         this.nearMisses++;
         this.addCombo(20);
         this.popup(`NEAR MISS x${this.combo}`, '#7fe3ff');

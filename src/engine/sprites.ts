@@ -83,24 +83,26 @@ function riderPose(o: RiderLook): { pose: ArtName; flip: boolean } {
 }
 
 /** Draw a rider from SVG art. Returns false while the art is still loading. */
+/** Police poses. The light bar flashes: two variants, one half dimmed in each. */
+function policePose(o: RiderLook): { pose: ArtName; flip: boolean } {
+  if (o.down) return { pose: 'police-crash', flip: o.side < 0 };
+  if ((o.swing ?? 0) > 0 || o.punch > 0) return { pose: 'police-baton-swing', flip: o.side < 0 };
+  return { pose: 'police-ride', flip: false };
+}
+
 function drawRiderArt(ctx: Ctx, cx: number, by: number, w: number, o: RiderLook) {
-  const { pose, flip } = riderPose(o);
-  const paint = { body: o.bike, jacket: o.jacket, helmet: o.helmet };
+  const { pose, flip } = o.cop ? policePose(o) : riderPose(o);
+  const redOn = Math.floor((o.time ?? 0) * 8) % 2 === 0;
+  const paint = o.cop ? { dim: redOn ? ('b' as const) : ('a' as const) } : { body: o.bike, jacket: o.jacket, helmet: o.helmet };
   ctx.save();
   ctx.translate(cx, by);
   shadow(ctx, w * 0.5, w * 0.1);
   if (!o.down) ctx.rotate(o.lean);
   if (flip) ctx.scale(-1, 1);
   const ok = svgArt.draw(ctx, pose, 0, 0, w, paint);
-  if (ok && o.night && !o.down) {
-    // Tail light glow, placed on the art's tail light (x 200, y 267 of 400).
-    const k = (w * 1.45) / 400;
-    ctx.globalCompositeOperation = 'lighter';
-    const g = ctx.createRadialGradient(0, -133 * k, 0, 0, -133 * k, 70 * k);
-    g.addColorStop(0, 'rgba(255,50,40,0.6)');
-    g.addColorStop(1, 'rgba(255,50,40,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(-70 * k, -203 * k, 140 * k, 140 * k);
+  if (ok && !o.down) {
+    if (o.night) svgArt.glow(ctx, pose, 0, 0, w, 'tail', '255,50,40', 0.6);
+    if (o.cop) svgArt.glow(ctx, pose, 0, 0, w, redOn ? 'light-a' : 'light-b', redOn ? '255,40,50' : '60,120,255', o.night ? 0.9 : 0.6);
   }
   ctx.restore();
   return ok;
@@ -108,8 +110,7 @@ function drawRiderArt(ctx: Ctx, cx: number, by: number, w: number, o: RiderLook)
 
 export function drawRider(ctx: Ctx, cx: number, by: number, w: number, o: RiderLook) {
   if (w < 1.5) return;
-  // Police keep the code-drawn rider until their art arrives (Prompt 3).
-  if (!o.cop && drawRiderArt(ctx, cx, by, w, o)) return;
+  if (drawRiderArt(ctx, cx, by, w, o)) return;
   ctx.save();
   ctx.translate(cx, by);
   shadow(ctx, w * 0.5, w * 0.1);
@@ -355,6 +356,9 @@ function drawHeldWeapon(ctx: Ctx, kind: 'club' | 'chain', side: number, swing: n
   ctx.restore();
 }
 
+/** Vehicle art by traffic kind. Kind numbers match CAR_KINDS in game.ts. */
+const VEHICLES: ArtName[] = ['car-sedan', 'car-hatch', 'car-suv', 'car-van', 'car-pickup', 'truck-semi'];
+
 export function drawCar(ctx: Ctx, cx: number, by: number, w: number, color: string, kind: number, night = false) {
   if (w < 2) return;
   // SVG art when it has loaded; the code-drawn car below is the fallback.
@@ -362,21 +366,9 @@ export function drawCar(ctx: Ctx, cx: number, by: number, w: number, color: stri
   ctx.translate(cx, by);
   shadow(ctx, w * 0.62, w * 0.08);
   ctx.restore();
-  if (svgArt.draw(ctx, 'car-sedan', cx, by, w, { body: color })) {
-    if (night) {
-      // Tail light glow, matched to the art's light clusters.
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      const k = w / 400;
-      for (const dx of [-148, 148]) {
-        const g = ctx.createRadialGradient(cx + dx * k, by - 150 * k, 0, cx + dx * k, by - 150 * k, 60 * k);
-        g.addColorStop(0, 'rgba(255,60,40,0.55)');
-        g.addColorStop(1, 'rgba(255,60,40,0)');
-        ctx.fillStyle = g;
-        ctx.fillRect(cx + (dx - 60) * k, by - 210 * k, 120 * k, 120 * k);
-      }
-      ctx.restore();
-    }
+  const art = VEHICLES[kind] ?? 'car-sedan';
+  if (svgArt.draw(ctx, art, cx, by, w, art === 'truck-semi' ? {} : { body: color })) {
+    if (night) svgArt.glow(ctx, art, cx, by, w, 'tail', '255,60,40', 0.55);
     return;
   }
   ctx.save();
@@ -384,9 +376,10 @@ export function drawCar(ctx: Ctx, cx: number, by: number, w: number, color: stri
   shadow(ctx, w * 0.62, w * 0.08);
   ctx.scale(w, w);
   const detail = w > 30;
-  // Heights: sedan, SUV, van.
-  const H = kind === 2 ? 0.86 : kind === 1 ? 0.7 : 0.54;
-  const bodyTop = kind === 2 ? -H : -H * 0.6;
+  // Fallback heights: sedan, SUV, van.
+  const fk = kind >= 3 ? 2 : kind === 2 ? 1 : 0;
+  const H = fk === 2 ? 0.86 : fk === 1 ? 0.7 : 0.54;
+  const bodyTop = fk === 2 ? -H : -H * 0.6;
   // Wheels peek out under the body.
   ctx.fillStyle = '#0c0c0e';
   rr(ctx, -0.47, -0.15, 0.17, 0.15, 0.04);
@@ -394,7 +387,7 @@ export function drawCar(ctx: Ctx, cx: number, by: number, w: number, color: stri
   // Lower body.
   ctx.fillStyle = detail ? vgrad(ctx, bodyTop, -0.08, shade(color, 0.3), shade(color, -0.35)) : color;
   rr(ctx, -0.5, bodyTop, 1, -0.08 - bodyTop, 0.07);
-  if (kind !== 2) {
+  if (fk !== 2) {
     // Cabin: narrower glasshouse.
     ctx.fillStyle = detail ? vgrad(ctx, -H, -H * 0.6, shade(color, 0.2), color) : color;
     ctx.beginPath();
@@ -406,9 +399,9 @@ export function drawCar(ctx: Ctx, cx: number, by: number, w: number, color: stri
     ctx.fill();
   }
   // Rear window with a sky reflection.
-  const wy0 = kind === 2 ? -H * 0.94 : -H * 0.95;
-  const wy1 = kind === 2 ? -H * 0.62 : -H * 0.63;
-  const wx = kind === 2 ? 0.4 : 0.31;
+  const wy0 = fk === 2 ? -H * 0.94 : -H * 0.95;
+  const wy1 = fk === 2 ? -H * 0.62 : -H * 0.63;
+  const wx = fk === 2 ? 0.4 : 0.31;
   if (detail) {
     const wg = ctx.createLinearGradient(0, wy0, 0, wy1);
     wg.addColorStop(0, night ? '#2a2f4a' : '#9fb7cf');
@@ -431,16 +424,16 @@ export function drawCar(ctx: Ctx, cx: number, by: number, w: number, color: stri
     ctx.lineTo(-wx - 0.02, wy1);
     ctx.closePath();
     ctx.fill();
-    if (kind === 2) {
+    if (fk === 2) {
       ctx.fillStyle = 'rgba(0,0,0,0.35)';
       ctx.fillRect(-0.006, wy1, 0.012, -0.12 - wy1);
     }
     // Roof highlight.
     ctx.fillStyle = 'rgba(255,255,255,0.28)';
-    ctx.fillRect(kind === 2 ? -0.46 : -0.32, -H, kind === 2 ? 0.92 : 0.64, 0.012);
+    ctx.fillRect(fk === 2 ? -0.46 : -0.32, -H, fk === 2 ? 0.92 : 0.64, 0.012);
   }
   // Tail lights: a cluster each side, glowing at night.
-  const ty = kind === 2 ? -H * 0.48 : -H * 0.5;
+  const ty = fk === 2 ? -H * 0.48 : -H * 0.5;
   ctx.shadowColor = '#ff2020';
   ctx.shadowBlur = night ? w * 0.18 : detail ? w * 0.04 : 0;
   ctx.fillStyle = '#d61f1f';

@@ -32,7 +32,10 @@ import type { Pt, Segment, Sprite } from './track';
 import { SpriteCache } from './art';
 import { ART, svgArt, type ArtName } from './svgart';
 
-const RIDER_POSES = (Object.keys(ART) as ArtName[]).filter((n) => n.startsWith('rider-'));
+const NAMES = Object.keys(ART) as ArtName[];
+const RIDER_POSES = NAMES.filter((n) => n.startsWith('rider-'));
+const POLICE_POSES = NAMES.filter((n) => n.startsWith('police-'));
+const CARS = NAMES.filter((n) => n.startsWith('car-'));
 
 /** Scenery drawn from SVG art instead of the cached code-drawn stamps. */
 const SVG_SCENERY: Partial<Record<Sprite['kind'], ArtName>> = {
@@ -204,6 +207,8 @@ export class Renderer {
       ...g.rivals.map((r) => ({ body: r.color, jacket: r.color, helmet: r.helmet })),
     ];
     svgArt.warm(RIDER_POSES, paints);
+    svgArt.warm(POLICE_POSES, [{ dim: 'a' }, { dim: 'b' }]);
+    svgArt.warm(CARS, [...new Set(g.cars.map((c) => c.color))].map((body) => ({ body })));
   }
 
   render(g: Game, dt: number) {

@@ -40,3 +40,22 @@ describe('repaint', () => {
     expect(repaint('<path fill="#14101F"/>', { body: '#000000' })).toBe('<path fill="#14101F"/>');
   });
 });
+
+describe('lights', () => {
+  it('finds tail lights on every vehicle and the police bike', () => {
+    for (const n of ['car-sedan', 'car-hatch', 'car-suv', 'car-van', 'car-pickup', 'truck-semi', 'police-ride'] as const) {
+      expect(ART[n].lights.tail.length, n).toBeGreaterThan(0);
+    }
+  });
+
+  it('finds both halves of the police light bar', () => {
+    expect(ART['police-ride'].lights['light-a'].length).toBeGreaterThan(0);
+    expect(ART['police-ride'].lights['light-b'].length).toBeGreaterThan(0);
+  });
+
+  it('dims one half of the light bar', () => {
+    const out = repaint(ART['police-ride'].svg, { dim: 'a' });
+    expect(out).toContain('class="light-a" opacity="0.28"');
+    expect(out).not.toContain('class="light-b" opacity');
+  });
+});
