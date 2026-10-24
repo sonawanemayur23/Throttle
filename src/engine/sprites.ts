@@ -1,6 +1,8 @@
 // Procedural sprites. Every function draws with its origin at bottom center,
 // in a box `w` pixels wide. No image files: the whole game stays tiny.
 
+import { svgArt } from './svgart';
+
 type Ctx = CanvasRenderingContext2D;
 
 export interface RiderLook {
@@ -317,6 +319,28 @@ function drawHeldWeapon(ctx: Ctx, kind: 'club' | 'chain', side: number, swing: n
 
 export function drawCar(ctx: Ctx, cx: number, by: number, w: number, color: string, kind: number, night = false) {
   if (w < 2) return;
+  // SVG art when it has loaded; the code-drawn car below is the fallback.
+  ctx.save();
+  ctx.translate(cx, by);
+  shadow(ctx, w * 0.62, w * 0.08);
+  ctx.restore();
+  if (svgArt.draw(ctx, 'car-sedan', cx, by, w, { body: color })) {
+    if (night) {
+      // Tail light glow, matched to the art's light clusters.
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const k = w / 400;
+      for (const dx of [-148, 148]) {
+        const g = ctx.createRadialGradient(cx + dx * k, by - 150 * k, 0, cx + dx * k, by - 150 * k, 60 * k);
+        g.addColorStop(0, 'rgba(255,60,40,0.55)');
+        g.addColorStop(1, 'rgba(255,60,40,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(cx + (dx - 60) * k, by - 210 * k, 120 * k, 120 * k);
+      }
+      ctx.restore();
+    }
+    return;
+  }
   ctx.save();
   ctx.translate(cx, by);
   shadow(ctx, w * 0.62, w * 0.08);
