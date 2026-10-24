@@ -12,6 +12,7 @@ src/
   save/      Player progress: versioned guest save, career rules, purchases. Pure functions.
   app/       Glue: GameHost (owns canvas, loop, input, sound), RaceSetup builder, PWA.
   ui/        React screens: title, career, garage, results, settings, pause, help.
+  art/       SVG game art. Spec in docs/ART.md.
   test/      Vitest suites and fakes for sound and input.
   main.tsx   Creates the host and mounts React.
 ```
@@ -37,7 +38,8 @@ Touch controls and the pause and sound buttons live in `index.html`, outside Rea
 | `game.ts` | Simulation: player, 6 rivals, police, traffic, combat, weapons, combos, hints, results |
 | `render.ts` | Pseudo 3D road renderer on Canvas 2D: sky, road, sprites back to front, particles, HUD, minimap |
 | `sprites.ts` | Live drawing for riders, cars, lamps and the start arch |
-| `art.ts` | High-detail scenery and clouds, drawn once into cached images (decision D10) |
+| `art.ts` | Code-drawn scenery, drawn once into cached images (decision D10). Being replaced by SVG art |
+| `svgart.ts` | SVG art from `src/art/`: repaint by color keys, rasterize once, stamp (decision D11, [ART.md](ART.md)) |
 | `audio.ts` | Synthesized engine, hits, siren. Handles phone audio unlock |
 | `input.ts` | Keyboard, touch steering pad and buttons, gamepad |
 

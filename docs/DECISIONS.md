@@ -45,3 +45,7 @@ Bikes and upgrade parts in the garage are drawn as SVG React components (`src/ui
 ## D10. Cached scenery stamps (Oct 2026)
 
 Scenery (palms, pines, rocks, bushes, cacti, buildings, billboards) is drawn once per variant into small offscreen canvases (`src/engine/art.ts`) and stamped with `drawImage` every frame. That lets each sprite carry gradients, shading and outlines that would be too slow to draw live for 100+ sprites a frame. Six variants per kind, built when a track loads. Riders and cars stay live-drawn because they animate, with a cheaper silhouette when far away.
+
+## D11. Game art as SVG files made in Claude Design (Oct 2026)
+
+Mayur was not happy with code-drawn sprites (P2-22). Art now comes from Claude Design as SVG, one file per asset in `src/art/`, in the style fixed by the art direction board: cel shading, 3 tones, dark outlines. SVG keeps assets sharp at any size and a few KB each. Color keys let one rider or car drawing serve every color. The engine rasterizes each asset once per size bucket and stamps it, so frame time does not grow. Code-drawn sprites stay as fallbacks while images load and for assets not yet drawn. Spec: [ART.md](ART.md). This supersedes D3 and D10 for any asset that has SVG art.
