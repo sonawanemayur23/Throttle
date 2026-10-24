@@ -44,6 +44,7 @@ export class GameHost {
     });
     document.addEventListener('visibilitychange', () => {
       this.hidden = document.hidden;
+      this.sound.setMusicHeld(this.hidden);
       if (this.hidden) {
         this.sound.engine(0, false);
         this.sound.siren(0);
@@ -86,16 +87,24 @@ export class GameHost {
     }
   }
 
+  setMusicVolume(v: number) {
+    this.sound.setMusicVolume(v);
+  }
+
   /** Drive a demo lap behind the menus. */
   attract(setup: RaceSetup) {
     this.paused = false;
     document.body.classList.remove('racing');
     this.touchEl?.classList.add('hidden');
+    this.sound.engine(0, false);
+    this.sound.siren(0);
+    this.sound.playMusic('menu');
     this.game.setAttract(setup);
   }
 
   startRace(setup: RaceSetup) {
     this.sound.unlock();
+    this.sound.playMusic(setup.track.id, true);
     this.paused = false;
     this.reported = false;
     document.body.classList.add('racing');
@@ -144,7 +153,9 @@ export class GameHost {
         this.reported = true;
         document.body.classList.remove('racing');
         this.touchEl?.classList.add('hidden');
+        this.sound.engine(0, false);
         this.sound.siren(0);
+        this.sound.playMusic('menu');
         this.onFinish?.(this.game.results);
       }
       this.syncWeapon();

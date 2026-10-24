@@ -49,3 +49,7 @@ Scenery (palms, pines, rocks, bushes, cacti, buildings, billboards) is drawn onc
 ## D11. Game art as SVG files made in Claude Design (Oct 2026)
 
 Mayur was not happy with code-drawn sprites (P2-22). Art now comes from Claude Design as SVG, one file per asset in `src/art/`, in the style fixed by the art direction board: cel shading, 3 tones, dark outlines. SVG keeps assets sharp at any size and a few KB each. Color keys let one rider or car drawing serve every color. The engine rasterizes each asset once per size bucket and stamps it, so frame time does not grow. Code-drawn sprites stay as fallbacks while images load and for assets not yet drawn. Spec: [ART.md](ART.md). This supersedes D3 and D10 for any asset that has SVG art.
+
+## D12. Original music, synthesized (Oct 2026)
+
+Menu and race music are loops written for this game and played with Web Audio oscillators. No recordings and no melodies from other games, so there is nothing to license (D3, D6). Menus share one loop. Each highway has its own. The race loop ducks under the engine. A music slider in the save lets a player turn the music off without muting the bike.

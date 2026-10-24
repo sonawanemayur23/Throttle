@@ -9,7 +9,7 @@ const ROWS: Array<[string, string, string, string]> = [
   ['Kick', 'K or X', 'KICK', 'A or B'],
   ['Swing weapon', 'L or C', 'Weapon button, shown when you hold one', 'Y'],
   ['Pause', 'P or Esc', 'Pause button, top center', 'Start'],
-  ['Sound', 'M', 'Settings', ''],
+  ['Sound', 'M', 'Sound and music in Settings', ''],
 ];
 
 const TIPS: Array<[string, string]> = [

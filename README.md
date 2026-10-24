@@ -57,7 +57,7 @@ Start with [AGENTS.md](AGENTS.md). It has the setup, the rules and the task work
 ## Status
 
 - Phase 1, feel prototype: **done**, playtest gate passed.
-- Phase 2, full single player game: core features done (P2-01 to P2-11). Next: deploy, analytics, phone performance, comfort settings, music, balance.
+- Phase 2, full single player game: core features done (P2-01 to P2-11). Music is in (P2-17). Next: deploy, analytics, phone performance, comfort settings, balance.
 - Phase 3 and 4: drafted in [docs/TASKS.md](docs/TASKS.md).
 
 Size: about 78 KB gzipped including React. 29 tests, including a bot that finishes a race on every track.

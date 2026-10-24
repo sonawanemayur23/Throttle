@@ -60,6 +60,7 @@ export function App({ host }: { host: GameHost }) {
   // Wire host callbacks once.
   useEffect(() => {
     host.setMuted(saveRef.current.settings.muted);
+    host.setMusicVolume(saveRef.current.settings.music);
     host.attract(raceSetup(saveRef.current, 1, TRACKS[0].id));
     host.onPauseChange = setPaused;
     host.onMuteToggle = () => {
@@ -87,6 +88,10 @@ export function App({ host }: { host: GameHost }) {
       setScreen('results');
     };
   }, [host, setSave]);
+
+  useEffect(() => {
+    host.setMusicVolume(save.settings.music);
+  }, [host, save.settings.music]);
 
   // Enter, Space or the gamepad A button act on the main button of each screen.
   useEffect(() => {
