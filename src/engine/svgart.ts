@@ -17,6 +17,22 @@ import desertRock from '../art/desert-rock.svg?raw';
 import desertWindmill from '../art/desert-windmill.svg?raw';
 import desertSign from '../art/desert-sign.svg?raw';
 import desertBush from '../art/desert-bush.svg?raw';
+import horizonCoastFar from '../art/horizon-coast-far.svg?raw';
+import horizonCoastMid from '../art/horizon-coast-mid.svg?raw';
+import horizonCoastNear from '../art/horizon-coast-near.svg?raw';
+import horizonDesertFar from '../art/horizon-desert-far.svg?raw';
+import horizonDesertMid from '../art/horizon-desert-mid.svg?raw';
+import horizonDesertNear from '../art/horizon-desert-near.svg?raw';
+import horizonMountainFar from '../art/horizon-mountain-far.svg?raw';
+import horizonMountainMid from '../art/horizon-mountain-mid.svg?raw';
+import horizonMountainNear from '../art/horizon-mountain-near.svg?raw';
+import horizonCityFar from '../art/horizon-city-far.svg?raw';
+import horizonCityMid from '../art/horizon-city-mid.svg?raw';
+import horizonCityNear from '../art/horizon-city-near.svg?raw';
+import skySunSunset from '../art/sky-sun-sunset.svg?raw';
+import skySunNoon from '../art/sky-sun-noon.svg?raw';
+import skySunPale from '../art/sky-sun-pale.svg?raw';
+import skyMoon from '../art/sky-moon.svg?raw';
 import mountainPineShort from '../art/mountain-pine-short.svg?raw';
 import mountainPineDead from '../art/mountain-pine-dead.svg?raw';
 import mountainBoulder from '../art/mountain-boulder.svg?raw';
@@ -145,6 +161,23 @@ export const ART = {
   ]),
   'desert-bush': def(desertBush, 1),
   'mountain-pine-tall': def(mountainPine, 1),
+  // Horizon strips (2048 x 400, tile sideways) and sky bodies. Drawn by size, not `fit`.
+  'horizon-coast-far': def(horizonCoastFar, 1),
+  'horizon-coast-mid': def(horizonCoastMid, 1),
+  'horizon-coast-near': def(horizonCoastNear, 1),
+  'horizon-desert-far': def(horizonDesertFar, 1),
+  'horizon-desert-mid': def(horizonDesertMid, 1),
+  'horizon-desert-near': def(horizonDesertNear, 1),
+  'horizon-mountain-far': def(horizonMountainFar, 1),
+  'horizon-mountain-mid': def(horizonMountainMid, 1),
+  'horizon-mountain-near': def(horizonMountainNear, 1),
+  'horizon-city-far': def(horizonCityFar, 1),
+  'horizon-city-mid': def(horizonCityMid, 1),
+  'horizon-city-near': def(horizonCityNear, 1),
+  'sky-sun-sunset': def(skySunSunset, 1),
+  'sky-sun-noon': def(skySunNoon, 1),
+  'sky-sun-pale': def(skySunPale, 1),
+  'sky-moon': def(skyMoon, 1),
   'mountain-pine-short': def(mountainPineShort, 1),
   'mountain-pine-dead': def(mountainPineDead, 1),
   'mountain-boulder': def(mountainBoulder, 1),
@@ -208,6 +241,7 @@ const BUCKETS = [64, 128, 256, 512, 1024];
 export class SvgArt {
   private images = new Map<string, HTMLImageElement>();
   private rasters = new Map<string, HTMLCanvasElement>();
+  private bottoms = new Map<ArtName, string>();
 
   /** Start loading the base images so the first race already has art. */
   preload(names: ArtName[] = Object.keys(ART) as ArtName[]) {
@@ -235,7 +269,12 @@ export class SvgArt {
   get(name: ArtName, px: number, paint: Paint = {}): HTMLCanvasElement | null {
     const { key, img } = this.image(name, paint);
     if (!img.complete || img.naturalWidth === 0) return null;
-    const bucket = BUCKETS.find((b) => b >= px) ?? BUCKETS[BUCKETS.length - 1];
+    let bi = BUCKETS.findIndex((b) => b >= px);
+    if (bi < 0) bi = BUCKETS.length - 1;
+    // Wide strips step down a size so one raster stays under about 2.6 M pixels.
+    const a0 = ART[name];
+    while (bi > 0 && (BUCKETS[bi] * BUCKETS[bi] * a0.vw) / a0.vh > 2.6e6) bi--;
+    const bucket = BUCKETS[bi];
     const rkey = `${key}|${bucket}`;
     let c = this.rasters.get(rkey);
     if (!c) {
@@ -255,6 +294,28 @@ export class SvgArt {
    */
   draw(ctx: CanvasRenderingContext2D, name: ArtName, x: number, y: number, w: number, paint: Paint = {}) {
     return this.drawAt(ctx, name, x, y, w * ART[name].fit, paint);
+  }
+
+  /**
+   * Color of the art's bottom row near the center, once it is ready, so a horizon
+   * strip can be extended down to the ground in its own color.
+   */
+  bottomColor(name: ArtName): string | null {
+    const hit = this.bottoms.get(name);
+    if (hit) return hit;
+    const c = this.get(name, 64);
+    if (!c) return null;
+    const d = c.getContext('2d')?.getImageData(0, c.height - 1, c.width, 1).data;
+    if (!d) return null;
+    // First solid pixel out from the center.
+    const mid = Math.floor(c.width / 2);
+    let at = -1;
+    for (let k = 0; k < c.width && at < 0; k++)
+      for (const x of [mid + k, mid - k]) if (x >= 0 && x < c.width && d[x * 4 + 3] > 200) { at = x; break; }
+    if (at < 0) return null;
+    const col = `rgb(${d[at * 4]},${d[at * 4 + 1]},${d[at * 4 + 2]})`;
+    this.bottoms.set(name, col);
+    return col;
   }
 
   /** Draw an asset `dw` pixels wide with its bottom center at (x, y). */

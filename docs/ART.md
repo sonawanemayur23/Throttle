@@ -60,6 +60,8 @@ Special classes the engine looks for, on `rect` elements: `tail` (tail lights, g
 4. Use it: for scenery, map the scenery kind per track in `SVG_SCENERY` in `src/engine/render.ts` (sign words live in `SIGN_WORDS`); for cars and riders, call `svgArt.draw()` in `src/engine/sprites.ts`.
 5. Run `npm run check`, then compare a race before and after with `npm run build:single`.
 
+Horizon strips are 2048 x 400, named `horizon-<track>-<far|mid|near>`, and must tile sideways (shapes that cross an edge repeat on the other side). Their bottom edge sits on the horizon; the engine fills below it in the strip's bottom color. Big flat files can be shrunk by merging same-color rects into one path, as done for the city strips.
+
 ## How the engine draws it
 
 `src/engine/svgart.ts`:
@@ -79,9 +81,9 @@ Until an image has loaded, `draw` returns false and the old code-drawn sprite is
 | Desert props: cacti, rock, bush, windmill, roadside sign | Prompt 4 | Desert; signs carry game-printed words |
 | Mountain props: tall, short and dead pines, boulder, log pile, rock face with waterfall, curve sign | Prompt 5 | Mountain |
 | City props: 3 towers, shopfront, street lamp, traffic light, bus stop | Prompt 5 | City; shop signs carry neon words, lamps glow at night |
-| Sky bands, sun, moon, ridges | Code, matched to the board | All tracks |
+| Sky bands | Code, matched to the board | All tracks |
+| Horizons: far, mid and near strip per track; sunset, noon and morning suns, moon | Prompt 6 | All tracks; strips tile sideways with parallax |
 | Riders, 10 poses | Prompt 2 | All riders, repainted per rider |
 | Police, 3 poses | Prompt 3 | Police chases, light bar flashes |
-| Horizons | Prompt 6 | Not yet; code-drawn |
 | Garage bikes and parts | Prompt 7 | Not yet; code-drawn SVG |
 | Icons, title art | Prompt 8 | Not yet |
