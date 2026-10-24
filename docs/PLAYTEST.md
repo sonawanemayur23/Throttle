@@ -5,7 +5,7 @@ Each phase ends with a gate. We move on only when the numbers pass.
 | Phase | Gate | How we measure today |
 | --- | --- | --- |
 | 1 | 12 of 20 testers play 5 or more races in their first session | Testers report the race number on the results screen. **Passed.** |
-| 2 | Day 1 retention 35 percent or more, 8 races per player per day | Needs analytics (task P2-13). Until then: 20 testers, ask on day 2 if they played again and how many races |
+| 2 | Day 1 retention 35 percent or more, 8 races per player per day | Umami Hobby (decision D14). The production site reports. Dev, localhost, and the playtest file do not. |
 | 3 | Viral coefficient 0.5 or more, 1,000 daily players | Needs invite tracking (Phase 3) |
 | 4 | 10,000 daily players within 30 days, 40 percent of races with a friend | Needs accounts and rooms (Phase 4) |
 

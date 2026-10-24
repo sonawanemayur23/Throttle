@@ -4,7 +4,7 @@ Working codename: **throttle**. Final name to be decided (shortlist: Revkick, Kn
 
 Live doc: https://claude.ai/artifact/4cRqQPkC7pjs8Pg8bYvcsX
 
-**Where we are (Oct 2026):** Phase 1 done, gate passed. Phase 2 core features built (tracks, bikes, career, police, garage, gamepad, PWA, saves, tests). Left for Phase 2: deploy, analytics, phone performance checks, comfort settings, music, balance. Live status is in [TASKS.md](TASKS.md).
+**Where we are (Oct 2026):** Phase 1 done, gate passed. Phase 2 core features built (tracks, bikes, career, police, garage, gamepad, PWA, saves, tests, music, comfort settings). The hosted build is on Vercel. Left for Phase 2: analytics, phone performance checks, balance. Live status is in [TASKS.md](TASKS.md).
 
 ## Summary
 
@@ -102,7 +102,7 @@ Goal: give players a reason to come back tomorrow.
 - [x] Gamepad support, PWA install
 - [x] Guest save in the browser with save codes. Sign in and sync moved to Phase 3, which brings the backend (decision D5)
 - [x] Hosted build on Vercel (P2-14). GitHub Pages was dropped because Actions could not run (decision D13).
-- [ ] Analytics, phone performance checks, comfort settings, balance (tasks P2-12, P2-13, P2-15, P2-16, P2-18). Music is done (P2-17).
+- [ ] Analytics on Umami (P2-13, production only; dashboard still needs a hosted race), phone performance checks, balance (P2-12, P2-15, P2-18). Comfort settings are done (P2-16). Music is done (P2-17).
 
 **Gate to Phase 3:** day 1 retention at 35 percent or more, average 8 races per player per day.
 

@@ -26,7 +26,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-10 | Guest save with versioning and save codes | done | Claude | P2-01 |
 | P2-11 | Test suite and CI | done | Claude | P2-01 |
 | P2-12 | Measure on low end phones; port renderer to PixiJS only if needed | todo | | P2-14 |
-| P2-13 | Analytics for the Phase 2 gate | todo | | P2-14 |
+| P2-13 | Analytics for the Phase 2 gate | doing | Cursor | P2-14 |
 | P2-14 | Deploy the hosted build | done | Cursor | |
 | P2-15 | Auto quality setting for slow devices | todo | | P2-12 |
 | P2-16 | Settings: reduce motion, vibration toggle, key remapping | done | Cursor | |
@@ -59,6 +59,8 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 - No events fire from the single-file playtest build or from `localhost`.
 - A saved dashboard shows day 1 retention and races per player per day.
 - Open question for Mayur: which tool and which account.
+
+**Notes:** P2-13, Oct 2026: Tool is Umami Hobby (D14). The production build loads `cloud.umami.is/script.js` for website `a01ee3b2-350b-4f26-9af5-19ba2c6e37b1`. Dev, localhost, preview deploys, and the playtest file do not. The app also sends `race_start`, `race_end`, `purchase`, and `level_unlock`. Still doing until a hosted race shows in Umami and two reports are saved: retention (return on day 1) and `race_start` count per player per day.
 
 ### P2-14. Deploy the hosted build
 

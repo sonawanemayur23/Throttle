@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { track as logPlay } from '../app/analytics';
 import type { GameHost } from '../app/host';
 import { raceSetup } from '../app/setup';
 import { TRACKS } from '../content/tracks';
@@ -53,6 +54,7 @@ export function App({ host }: { host: GameHost }) {
       setPaused(false);
       setScreen('race');
       host.startRace(raceSetup(saveRef.current, lvl, track));
+      logPlay('race_start', { track, level: lvl, bike: saveRef.current.selectedBike });
     },
     [host],
   );
@@ -85,7 +87,11 @@ export function App({ host }: { host: GameHost }) {
       });
       setSave(next);
       setLast({ results: r, earnings: r.score, unlocked, cashAfter: next.cash, newBest: r.score > prevBest });
-      if (unlocked) setLevel(unlocked);
+      logPlay('race_end', { place: r.place, time: Math.round(r.time * 10) / 10, busted: r.busted ? 1 : 0, kos: r.kos + r.copKos });
+      if (unlocked) {
+        setLevel(unlocked);
+        logPlay('level_unlock', { level: unlocked });
+      }
       setScreen('results');
     };
   }, [host, setSave]);
