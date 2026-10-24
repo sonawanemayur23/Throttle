@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { BIKES, upgradeCost } from '../content/bikes';
 import { LEVELS } from '../content/career';
 import { TRACKS } from '../content/tracks';
-import { buyBike, buyUpgrade, exportCode, importCode, migrate, newSave, recordRace, unlockedLevel } from '../save/save';
+import { SAVE_VERSION, buyBike, buyUpgrade, exportCode, importCode, migrate, newSave, recordRace, unlockedLevel } from '../save/save';
 
 const race = (level: number, trackId: string, place: number, extra = {}) => ({
   level,
@@ -82,5 +82,26 @@ describe('save', () => {
     const s = { ...newSave(), cash: 4321 };
     expect(importCode(exportCode(s))?.cash).toBe(4321);
     expect(importCode('not a code')).toBeNull();
+  });
+
+  it('migrates a version 1 save and keeps the music level in range', () => {
+    const s = migrate({ version: 1, cash: 80, settings: { muted: true, hints: false } });
+    expect(s.version).toBe(SAVE_VERSION);
+    expect(s.cash).toBe(80);
+    expect(s.settings).toEqual({ muted: true, hints: false, music: 0.7 });
+    expect(migrate({ settings: { music: 9 } }).settings.music).toBe(1);
+    expect(migrate({ settings: { music: 0 } }).settings.music).toBe(0);
+    expect(migrate({ settings: { music: 'loud' } }).settings.music).toBe(0.7);
+  });
+
+  it('loads an older save code and rejects a newer one', () => {
+    const legacy = { ...newSave(), version: 1, cash: 15, settings: { muted: false, hints: true } };
+    const code = btoa(unescape(encodeURIComponent(JSON.stringify(legacy))));
+    const loaded = importCode(code);
+    expect(loaded?.cash).toBe(15);
+    expect(loaded?.settings.music).toBe(0.7);
+    const future = { ...newSave(), version: SAVE_VERSION + 1 };
+    const futureCode = btoa(unescape(encodeURIComponent(JSON.stringify(future))));
+    expect(importCode(futureCode)).toBeNull();
   });
 });

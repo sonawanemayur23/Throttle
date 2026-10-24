@@ -40,7 +40,8 @@ Touch controls and the pause and sound buttons live in `index.html`, outside Rea
 | `sprites.ts` | Live drawing for riders, cars, lamps and the start arch |
 | `art.ts` | Code-drawn scenery, drawn once into cached images (decision D10). Being replaced by SVG art |
 | `svgart.ts` | SVG art from `src/art/`: repaint by color keys, rasterize once, stamp (decision D11, [ART.md](ART.md)) |
-| `audio.ts` | Synthesized engine, hits, siren. Handles phone audio unlock |
+| `audio.ts` | Synthesized engine, hits, siren, and the phone audio unlock. Music is a separate bus so the beat does not pump the engine |
+| `music.ts` | Original menu and highway loops. Scheduled on the audio clock, ducked while the engine runs |
 | `input.ts` | Keyboard, touch steering pad and buttons, gamepad |
 
 ### World coordinates
