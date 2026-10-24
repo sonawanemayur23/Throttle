@@ -101,6 +101,20 @@ const SIGN_WORDS: Partial<Record<ArtName, string[][]>> = {
   ],
   'city-shopfront': [['PIZZA', 'NOODLES', 'ARCADE', 'DINER', 'RECORDS', 'KARAOKE', 'OPEN 24 HR', 'LAUNDRY', 'BURGERS']],
 };
+/** Horizon strips per track, back to front, named `horizon-<track>-<layer>`. */
+const HORIZON_LAYERS = ['far', 'mid', 'near'];
+/** Strip height as a share of the screen height. */
+const HORIZON_H = 0.36;
+/**
+ * Sun and moon art. `size`: drawn width as a share of the sky unit
+ * (min of width and 1.4 x height). `y`: center height as a share of the screen.
+ */
+const SKY_BODY: Partial<Record<Palette['sun'], { art: ArtName; size: number; y: number }>> = {
+  sun: { art: 'sky-sun-sunset', size: 0.3, y: 0.4 },
+  noon: { art: 'sky-sun-noon', size: 0.155, y: 0.14 },
+  pale: { art: 'sky-sun-pale', size: 0.15, y: 0.3 },
+  moon: { art: 'sky-moon', size: 0.12, y: 0.17 },
+};
 const OUTLINE = '#14101F';
 const PLAYER_JACKET = '#2b2f3a';
 const PLAYER_HELMET = '#f2f2f2';
@@ -746,7 +760,10 @@ export class Renderer {
     // Sun or moon, drifting with the curves. Flat two-tone shapes, no glow.
     const sx = w * (0.5 + ((this.skyOffset * 3) % 1) - 0.5);
     const unit = Math.min(w, h * 1.4);
-    if (pal.sun === 'sun') {
+    const body = SKY_BODY[pal.sun];
+    if (body && svgArt.drawAt(this.ctx, body.art, sx, h * body.y + unit * body.size * 0.5, unit * body.size)) {
+      // Drawn from art.
+    } else if (pal.sun === 'sun') {
       const sy = h * 0.4;
       const r = unit * 0.13;
       ctx.save();
@@ -813,6 +830,7 @@ export class Renderer {
     this.ridges.forEach((pts, layer) => {
       const speed = [0.6, 1, 1.6][layer];
       const off = (this.skyOffset * speed) % 1;
+      if (this.def && this.horizon(`horizon-${this.def.id}-${HORIZON_LAYERS[layer]}` as ArtName, off, h * 0.5 + lift * h * (layer + 1) * 0.03)) return;
       const baseY = h * (0.5 + layer * 0.025) + lift * h * (layer + 1) * 0.03;
       const amp = h * (0.16 - layer * 0.035);
       ctx.fillStyle = pal.ridges[layer];
@@ -854,6 +872,29 @@ export class Renderer {
       ctx.fill();
       if (layer > 0) ctx.stroke();
     });
+  }
+
+  /**
+   * One horizon strip from art, tiled sideways and scrolled by `off` (a share
+   * of the screen width), its bottom on `baseY`. Below it, a fill in the strip's
+   * own ground color covers the gap hills can open. False if not ready.
+   */
+  private horizon(name: ArtName, off: number, baseY: number) {
+    const a = ART[name];
+    if (!a) return false;
+    const { w, h, ctx } = this;
+    // Capped by width too, so tall phone screens do not zoom into the strip.
+    const dh = Math.min(h * HORIZON_H, Math.min(w, h * 1.4) * 0.34);
+    const dw = (dh * a.vw) / a.vh;
+    const c = svgArt.get(name, dh);
+    const ground = svgArt.bottomColor(name);
+    if (!c || !ground) return false;
+    const y = Math.round(baseY - dh);
+    let x = -mod(off * w, dw);
+    for (; x < w; x += dw) ctx.drawImage(c, Math.floor(x), y, Math.ceil(dw) + 1, dh);
+    ctx.fillStyle = ground;
+    ctx.fillRect(0, y + dh - 1, w, h - (y + dh) + 1);
+    return true;
   }
 
   private poly(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number, color: string) {
