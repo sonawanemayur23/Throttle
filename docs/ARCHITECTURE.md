@@ -25,7 +25,7 @@ Imports only point down this list: `ui → app → engine, save, content`; `save
 2. `GameHost.startRace(setup)` hands it to `Game.start()`.
 3. Every animation frame the host calls `input.poll()` (gamepad), `game.update(dt)` and `renderer.render(game, dt)`. React is not involved.
 4. When the race ends, `Game` fills `game.results`. After 1.6 seconds the host calls `onFinish(results)`.
-5. `App` passes the results to `recordRace()` in `src/save/save.ts`, writes the save, and shows the results screen.
+5. `App` passes the results to `recordRace()` in `src/save/save.ts`, writes the save, and shows the results screen. The same screens call `track()` in `src/app/analytics.ts` for race start, race end, a purchase, and a level unlock. The engine does not know about analytics.
 
 Touch controls and the pause and sound buttons live in `index.html`, outside React, so input can bind to them once and re-renders never touch them.
 

@@ -26,7 +26,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-10 | Guest save with versioning and save codes | done | Claude | P2-01 |
 | P2-11 | Test suite and CI | done | Claude | P2-01 |
 | P2-12 | Measure on low end phones; port renderer to PixiJS only if needed | todo | | P2-14 |
-| P2-13 | Analytics for the Phase 2 gate | todo | | P2-14 |
+| P2-13 | Analytics for the Phase 2 gate | doing | Cursor | P2-14 |
 | P2-14 | Deploy the hosted build | done | Cursor | |
 | P2-15 | Auto quality setting for slow devices | todo | | P2-12 |
 | P2-16 | Settings: reduce motion, vibration toggle, key remapping | done | Cursor | |
@@ -59,6 +59,8 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 - No events fire from the single-file playtest build or from `localhost`.
 - A saved dashboard shows day 1 retention and races per player per day.
 - Open question for Mayur: which tool and which account.
+
+**Notes:** P2-13, Oct 2026: Tool is Umami Hobby (D14). The app sends `race_start`, `race_end`, `purchase`, and `level_unlock` with an anonymous id. Still doing until `VITE_UMAMI_WEBSITE_ID` is set on Vercel, a hosted race shows in Umami, and two reports are saved: retention (return on day 1) and `race_start` count per player per day.
 
 ### P2-14. Deploy the hosted build
 

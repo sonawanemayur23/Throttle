@@ -57,3 +57,7 @@ Menu and race music are loops written for this game and played with Web Audio os
 ## D13. Host the game on Vercel, not GitHub Pages (Oct 2026)
 
 P2-14 added a GitHub Pages workflow. Pages never published: the GitHub account is locked for a billing problem, so Actions jobs do not start. Mayur deployed the Vite build to Vercel instead, and that link works. The Pages workflow is removed so a locked Actions account is not on the release path. Pull request checks in `.github/workflows/ci.yml` stay. `base: './'` still lets the build run under any host path.
+
+## D14. Umami for play stats (Oct 2026)
+
+P2-13 needs day 1 retention and races per player. Mayur asked for a free open source tool. Umami is MIT licensed, uses no cookies, and the free Hobby plan includes retention reports (100,000 events a month). Plausible's hosted product is paid. PostHog is open source too, but its script and product are larger than this game needs. No npm package is added. `src/app/analytics.ts` POSTs to Umami `/api/send`. An anonymous id lives in `localStorage` under `throttle.player`, separate from the save, and is sent as the distinct id. Events stay off when the website id is missing, in dev, on localhost, and in the single-file playtest build. Set `VITE_UMAMI_WEBSITE_ID` on Vercel (optional `VITE_UMAMI_HOST`, default `https://gateway.umami.is`) and rebuild. The id is public in the hosted page, and it stays out of the repo so local builds cannot report.

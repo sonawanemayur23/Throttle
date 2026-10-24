@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { track } from '../../app/analytics';
 import type { Screen } from '../App';
 import { BIKES, MAX_UPGRADE, STOCK, UPGRADE_INFO, UPGRADE_KINDS, bikeStats, upgradeCost, type UpgradeKind } from '../../content/bikes';
 import { buyBike, buyUpgrade, type SaveData } from '../../save/save';
@@ -36,10 +37,11 @@ export function Garage({ save, setSave, back }: Props) {
   const preview = hover && owned && up[hover] < MAX_UPGRADE ? bikeStats(bike, { ...up, [hover]: up[hover] + 1 }) : null;
   const riding = save.selectedBike === bike.id;
 
-  const act = (r: ReturnType<typeof buyBike>) => {
+  const act = (r: ReturnType<typeof buyBike>, purchase?: { item: string; price: number }) => {
     if (r.ok) {
       setSave(r.save);
       setMsg(null);
+      if (purchase) track('purchase', purchase);
     } else setMsg(r.reason);
   };
 
@@ -121,7 +123,7 @@ export function Garage({ save, setSave, back }: Props) {
                         className={`buy${short ? ' short' : ''}`}
                         disabled={maxed}
                         aria-label={maxed ? `${UPGRADE_INFO[k].label} fully upgraded` : `Upgrade ${UPGRADE_INFO[k].label} for ${money(cost)}`}
-                        onClick={() => act(buyUpgrade(save, bike.id, k))}
+                        onClick={() => act(buyUpgrade(save, bike.id, k), { item: `${bike.id}-${k}`, price: cost })}
                       >
                         {maxed ? 'Max' : money(cost)}
                       </button>
@@ -140,7 +142,7 @@ export function Garage({ save, setSave, back }: Props) {
             </p>
 
             {!owned && (
-              <button type="button" className="btn wide" data-primary disabled={save.cash < bike.price} onClick={() => act(buyBike(save, bike.id))}>
+              <button type="button" className="btn wide" data-primary disabled={save.cash < bike.price} onClick={() => act(buyBike(save, bike.id), { item: bike.id, price: bike.price })}>
                 Buy for {money(bike.price)}
               </button>
             )}
