@@ -60,7 +60,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 - A saved dashboard shows day 1 retention and races per player per day.
 - Open question for Mayur: which tool and which account.
 
-**Notes:** P2-13, Oct 2026: Tool is Umami Hobby (D14). The app sends `race_start`, `race_end`, `purchase`, and `level_unlock` with an anonymous id. Still doing until `VITE_UMAMI_WEBSITE_ID` is set on Vercel, a hosted race shows in Umami, and two reports are saved: retention (return on day 1) and `race_start` count per player per day.
+**Notes:** P2-13, Oct 2026: Tool is Umami Hobby (D14). The production build loads `cloud.umami.is/script.js` for website `a01ee3b2-350b-4f26-9af5-19ba2c6e37b1`. Dev, localhost, preview deploys, and the playtest file do not. The app also sends `race_start`, `race_end`, `purchase`, and `level_unlock`. Still doing until a hosted race shows in Umami and two reports are saved: retention (return on day 1) and `race_start` count per player per day.
 
 ### P2-14. Deploy the hosted build
 

@@ -2,6 +2,8 @@
 // imports this. See decision D14.
 
 export const PLAYER_KEY = 'throttle.player';
+export const UMAMI_WEBSITE_ID = 'a01ee3b2-350b-4f26-9af5-19ba2c6e37b1';
+export const UMAMI_SCRIPT = 'https://cloud.umami.is/script.js';
 const DEFAULT_HOST = 'https://gateway.umami.is';
 
 export type AnalyticsName = 'race_start' | 'race_end' | 'purchase' | 'level_unlock';
@@ -26,6 +28,31 @@ type Store = Pick<Storage, 'getItem' | 'setItem'>;
 type FetchLike = (url: string, init: { method: string; headers: Record<string, string>; body: string; keepalive: boolean }) => Promise<unknown>;
 
 const LOCAL = new Set(['localhost', '127.0.0.1', '0.0.0.0', '::1']);
+
+/** True only for a production build that is not a Vercel preview or dev deploy. */
+export function hostedAnalytics(mode: string, vercelEnv: string | undefined): boolean {
+  if (mode !== 'production') return false;
+  if (vercelEnv === 'preview' || vercelEnv === 'development') return false;
+  return true;
+}
+
+/**
+ * The tracker tag, added to the production HTML only. The script is not fetched
+ * when the page is opened on localhost, so a local preview of dist/ stays quiet.
+ */
+export function umamiHeadScript(): string {
+  return `<script>
+(function () {
+  var host = location.hostname.replace(/^\\[|\\]$/g, '').toLowerCase();
+  if (host === 'localhost' || host === '127.0.0.1' || host === '0.0.0.0' || host === '::1') return;
+  var s = document.createElement('script');
+  s.defer = true;
+  s.src = '${UMAMI_SCRIPT}';
+  s.setAttribute('data-website-id', '${UMAMI_WEBSITE_ID}');
+  document.head.appendChild(s);
+})();
+</script>`;
+}
 
 /** Hosted production only. Dev, the one-file playtest build, and localhost stay quiet. */
 export function analyticsAllowed(env: AnalyticsEnv): boolean {
@@ -89,8 +116,8 @@ export function sendAnalytics(
 
 function liveEnv(): AnalyticsEnv {
   return {
-    mode: import.meta.env.MODE,
-    websiteId: import.meta.env.VITE_UMAMI_WEBSITE_ID ?? '',
+    mode: import.meta.env.VITE_ANALYTICS === '1' ? 'production' : 'development',
+    websiteId: import.meta.env.VITE_UMAMI_WEBSITE_ID || UMAMI_WEBSITE_ID,
     endpointHost: import.meta.env.VITE_UMAMI_HOST ?? DEFAULT_HOST,
     hostname: location.hostname,
   };

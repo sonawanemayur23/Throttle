@@ -61,7 +61,7 @@ Start with [AGENTS.md](AGENTS.md). It has the setup, the rules and the task work
 ## Status
 
 - Phase 1, feel prototype: **done**, playtest gate passed.
-- Phase 2, full single player game: core features done (P2-01 to P2-11). Music is in (P2-17). Comfort settings are in (P2-16). The hosted build is on Vercel (P2-14). Play stats go to Umami once `VITE_UMAMI_WEBSITE_ID` is set there (P2-13). Next: phone performance and balance.
+- Phase 2, full single player game: core features done (P2-01 to P2-11). Music is in (P2-17). Comfort settings are in (P2-16). The hosted build is on Vercel (P2-14). The production site reports play to Umami (P2-13). Dev and localhost do not. Next: phone performance and balance.
 - Phase 3 and 4: drafted in [docs/TASKS.md](docs/TASKS.md).
 
 Size: about 78 KB gzipped including React. 29 tests, including a bot that finishes a race on every track.

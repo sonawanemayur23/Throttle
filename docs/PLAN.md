@@ -102,7 +102,7 @@ Goal: give players a reason to come back tomorrow.
 - [x] Gamepad support, PWA install
 - [x] Guest save in the browser with save codes. Sign in and sync moved to Phase 3, which brings the backend (decision D5)
 - [x] Hosted build on Vercel (P2-14). GitHub Pages was dropped because Actions could not run (decision D13).
-- [ ] Analytics on Umami (P2-13, needs the website id on Vercel), phone performance checks, balance (P2-12, P2-15, P2-18). Comfort settings are done (P2-16). Music is done (P2-17).
+- [ ] Analytics on Umami (P2-13, production only; dashboard still needs a hosted race), phone performance checks, balance (P2-12, P2-15, P2-18). Comfort settings are done (P2-16). Music is done (P2-17).
 
 **Gate to Phase 3:** day 1 retention at 35 percent or more, average 8 races per player per day.
 

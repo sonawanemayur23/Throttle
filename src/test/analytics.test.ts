@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { PLAYER_KEY, analyticsAllowed, buildPayload, playerId, sendAnalytics, type AnalyticsEnv, type PageInfo } from '../app/analytics';
+import { PLAYER_KEY, UMAMI_SCRIPT, UMAMI_WEBSITE_ID, analyticsAllowed, buildPayload, hostedAnalytics, playerId, sendAnalytics, umamiHeadScript, type AnalyticsEnv, type PageInfo } from '../app/analytics';
 
 const page: PageInfo = {
   hostname: 'throttle.vercel.app',
@@ -29,6 +29,19 @@ function store() {
 }
 
 describe('analytics', () => {
+  it('adds the Umami tag only for a real production build, and the tag skips localhost', () => {
+    expect(hostedAnalytics('production', undefined)).toBe(true);
+    expect(hostedAnalytics('production', 'production')).toBe(true);
+    expect(hostedAnalytics('production', 'preview')).toBe(false);
+    expect(hostedAnalytics('production', 'development')).toBe(false);
+    expect(hostedAnalytics('development', 'production')).toBe(false);
+    expect(hostedAnalytics('single', undefined)).toBe(false);
+    const tag = umamiHeadScript();
+    expect(tag).toContain(UMAMI_SCRIPT);
+    expect(tag).toContain(`data-website-id', '${UMAMI_WEBSITE_ID}'`);
+    expect(tag).toContain("host === 'localhost'");
+  });
+
   it('stays quiet in dev, the playtest file, localhost, and without a website id', () => {
     expect(analyticsAllowed(live)).toBe(true);
     expect(analyticsAllowed({ ...live, mode: 'development' })).toBe(false);
