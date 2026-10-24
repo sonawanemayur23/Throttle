@@ -27,7 +27,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-11 | Test suite and CI | done | Claude | P2-01 |
 | P2-12 | Measure on low end phones; port renderer to PixiJS only if needed | todo | | P2-14 |
 | P2-13 | Analytics for the Phase 2 gate | todo | | P2-14 |
-| P2-14 | Deploy the hosted build to GitHub Pages | todo | | |
+| P2-14 | Deploy the hosted build to GitHub Pages | doing | Cursor | |
 | P2-15 | Auto quality setting for slow devices | todo | | P2-12 |
 | P2-16 | Settings: reduce motion, vibration toggle, key remapping | todo | | |
 | P2-17 | Original music loop and engine sound polish | done | Cursor | |
@@ -152,6 +152,7 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 ## Notes
 
 - P2-17, Oct 2026: five original Web Audio loops (menu, plus one per highway), ducked under the engine, music slider in Settings, save version 2 so old saves gain a music level.
+- P2-14, Oct 2026: GitHub Actions runs check and build on each push to main and publishes dist/ to Pages. Live URL is https://sonawanemayur23.github.io/Throttle/ after Pages source is set to GitHub Actions.
 - P2-25, Oct 2026: police in 3 poses with a flashing light bar (two variants, one half dimmed, plus a red or blue glow), 6 traffic vehicles (sedan, hatchback, SUV, van, pickup, semi) with weights and per-kind speeds, semi hit box 1.35 times a car, tail light glows read from each asset's `tail` rects. Every in-race sprite except some scenery now comes from Claude Design.
 - P2-24, Oct 2026: 10 rider poses from Prompt 2 in game (ride, punch, kick, hurt, club and chain hold and swing, two crash poses), mirrored for the left, repainted per rider, preloaded per race. This art came from the earlier Prompt 2 text (big helmet, 160 px tail); rerunning the updated Prompt 2 only needs the 10 files replaced. Police stay code-drawn until Prompt 3.
 - P2-23, Oct 2026: SVG art pipeline (repaint by color keys, rasterize once per size bucket, stamp with fallback), clean-svg import script, art tests, board car, palm, pine and rock in game, flat banded sky, striped sun, flat moon, outlined ridges.
