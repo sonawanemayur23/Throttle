@@ -30,18 +30,42 @@ import {
 } from './sprites';
 import type { Pt, Segment, Sprite } from './track';
 import { SpriteCache } from './art';
-import { ART, svgArt, type ArtName } from './svgart';
+import { ART, PROP_SCALE, svgArt, type ArtName } from './svgart';
 
 const NAMES = Object.keys(ART) as ArtName[];
 const RIDER_POSES = NAMES.filter((n) => n.startsWith('rider-'));
 const POLICE_POSES = NAMES.filter((n) => n.startsWith('police-'));
 const CARS = NAMES.filter((n) => n.startsWith('car-'));
 
-/** Scenery drawn from SVG art instead of the cached code-drawn stamps. */
-const SVG_SCENERY: Partial<Record<Sprite['kind'], ArtName>> = {
-  palm: 'coast-palm-tall',
-  pine: 'mountain-pine-tall',
-  rock: 'coast-rock',
+type SceneryArt = Partial<Record<Sprite['kind'], ArtName>>;
+/** Scenery drawn from SVG art, per track, instead of the cached code-drawn stamps. */
+const SVG_SCENERY: Record<string, SceneryArt> = {
+  coast: {
+    palm: 'coast-palm-tall',
+    palm2: 'coast-palm-pair',
+    bush: 'coast-shrub',
+    rock: 'coast-rock',
+    tower: 'coast-tower',
+    sign: 'coast-billboard',
+  },
+  desert: {
+    cactus: 'desert-cactus-tall',
+    cactus2: 'desert-cactus-small',
+    rock: 'desert-rock',
+    bush: 'desert-bush',
+    windmill: 'desert-windmill',
+    sign: 'desert-sign',
+  },
+  mountain: { pine: 'mountain-pine-tall', rock: 'coast-rock' },
+  city: { palm: 'coast-palm-tall', rock: 'coast-rock' },
+};
+/** Words printed on sign panels, one set per panel, picked by the sprite's variant. */
+const SIGN_WORDS: Partial<Record<ArtName, string[][]>> = {
+  'coast-billboard': [['MOTEL', 'SURF SHOP', 'DINER', 'TACOS', 'COLD DRINKS', 'FUEL 24/7', 'ICE CREAM', 'BAIT & TACKLE']],
+  'desert-sign': [
+    ['FUEL', 'EATS', 'MOTEL', 'GAS', 'CAFE', 'TOW'],
+    ['OPEN 24/7', 'LAST STOP', '12 MI', 'COLD BEER', 'VACANCY', 'NEXT EXIT'],
+  ],
 };
 const OUTLINE = '#14101F';
 const PLAYER_JACKET = '#2b2f3a';
@@ -89,6 +113,10 @@ const roadColors = (p: Palette): RoadColors => ({
 
 const SPRITE_W: Record<Sprite['kind'], number> = {
   palm: 700,
+  palm2: 900,
+  tower: 800,
+  windmill: 700,
+  cactus2: 400,
   bush: 650,
   rock: 800,
   sign: 1100,
@@ -537,17 +565,22 @@ export class Renderer {
 
   private drawSprite(sp: Sprite, x: number, y: number, w: number) {
     const ctx = this.ctx;
-    const art = SVG_SCENERY[sp.kind];
-    // Mirror half the props so a row of the same drawing does not look stamped.
+    const art = SVG_SCENERY[this.def?.id ?? '']?.[sp.kind];
     if (art) {
-      if (sp.variant < 0.5) {
+      // Props share one scale (art px to world units), so the sheet's sizes hold.
+      const dw = ART[art].vw * PROP_SCALE * (w / SPRITE_W[sp.kind]);
+      const words = SIGN_WORDS[art];
+      if (words) {
+        if (svgArt.drawAt(ctx, art, x, y, dw)) return this.signText(art, words, x, y, dw, sp.variant);
+      } else if (sp.variant < 0.5) {
+        // Mirror half the props so a row of the same drawing does not look stamped.
         ctx.save();
         ctx.translate(x, 0);
         ctx.scale(-1, 1);
-        const ok = svgArt.draw(ctx, art, 0, y, w);
+        const ok = svgArt.drawAt(ctx, art, 0, y, dw);
         ctx.restore();
         if (ok) return;
-      } else if (svgArt.draw(ctx, art, x, y, w)) return;
+      } else if (svgArt.drawAt(ctx, art, x, y, dw)) return;
     }
     const stamp = this.cache.get(sp.kind, sp.variant);
     if (stamp) {
@@ -581,6 +614,35 @@ export class Renderer {
         // The arm always reaches over the road.
         return drawLamp(ctx, x, y, w, sp.offset < 0 ? 0.9 : 0.1);
     }
+  }
+
+  /** Print the sign's words over its blank panels. Signs are never mirrored. */
+  private signText(art: ArtName, words: string[][], x: number, y: number, dw: number, variant: number) {
+    const a = ART[art];
+    if (!a.panels) return;
+    const k = dw / a.vw;
+    const left = x - dw / 2;
+    const top = y - a.vh * k;
+    const ctx = this.ctx;
+    a.panels.forEach((p, i) => {
+      const list = words[i];
+      if (!list) return;
+      const pw = p.w * k;
+      const ph = p.h * k;
+      if (ph < 6) return;
+      const text = list[Math.floor(variant * 997 + i * 3) % list.length];
+      let size = ph * 0.62;
+      ctx.font = `800 ${size}px ${HUD_FONT}`;
+      const tw = ctx.measureText(text).width;
+      if (tw > pw * 0.88) {
+        size *= (pw * 0.88) / tw;
+        ctx.font = `800 ${size}px ${HUD_FONT}`;
+      }
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = OUTLINE;
+      ctx.fillText(text, left + (p.x + p.w / 2) * k, top + (p.y + p.h / 2) * k + size * 0.04);
+    });
   }
 
   /** Sky color at height y, from the flat bands built for this track. */
