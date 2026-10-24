@@ -4,6 +4,21 @@ How to use this file: see [AGENTS.md](../AGENTS.md). Take the first `todo` task 
 
 Status: `todo`, `doing`, `done`, `blocked`, `parked`.
 
+## Next up
+
+State on 24 Oct 2026: Phase 1 done. Phase 2 features done (P2-01 to P2-11, P2-21 to P2-26). Nearly all art is from Claude Design. Last open pull request: #11 (garage art and this hand-off). Work in this order:
+
+1. **P2-14** Deploy to GitHub Pages. Nothing else can be measured until the game is hosted.
+2. **P2-13** Analytics. Needs Mayur to pick the tool and account.
+3. **P2-12** Phone performance on real devices, then **P2-15** auto quality if needed.
+4. **P2-27** Icons and title art, as soon as Mayur sends the Prompt 8 output.
+5. **P2-28** Upgrades visible on the garage bike again.
+6. **P2-16** Comfort settings, **P2-17** music, **P2-29** sky polish, **P2-30** rider proportions.
+7. **P2-18** Balance, once there is a week of analytics.
+8. **P2-19** Name and domain (Mayur). Phase 3 cannot launch publicly without it.
+
+Each task below has a Why, a Do and a Done when. If a task is unclear, ask Mayur before building.
+
 ## Phase 1: Feel prototype
 
 **Status: done.** Gate passed (12 of 20 testers played 5 or more races). Details in [PLAN.md](PLAN.md).
@@ -41,6 +56,9 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-25 | Police and traffic from Prompt 3 art | done | Claude | P2-24 |
 | P2-26 | Props and horizons from Prompts 4 to 6: coast, desert, mountain and city props, 12 horizon strips, sun and moon art | done | Claude | P2-23, art from Mayur |
 | P2-27 | Garage art and icons from Prompts 7 and 8. Garage bikes and parts (Prompt 7) done; icons and title art (Prompt 8) wait on art | in progress | Claude | P2-23, art from Mayur |
+| P2-28 | Show upgrades on the garage bike again | todo | | P2-27 |
+| P2-29 | Sky polish: art-matched sky bands, stars and lamp glows | todo | | P2-26 |
+| P2-30 | Rider proportions: rerun the updated Prompt 2 | todo | Mayur, then any agent | P2-24 |
 
 ### P2-12. Measure on low end phones
 
@@ -109,6 +127,37 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 **Do:** richer road, sky, scenery, riders and cars, lighting and effects, within the frame budget in AGENTS.md.
 **Done when:** before and after screenshots of all 4 tracks are in the pull request, and render time per frame stays under 12 ms in a desktop browser without a GPU.
 
+### P2-27. Icons and title art (Prompt 8), remaining part
+
+**Why:** the menus still use simple code-drawn icons (`src/ui/art/Icons.tsx`) and a text logo. Prompt 8 in the prompts doc asks Claude Design for the icon set and the title art.
+**Do:**
+1. Mayur pastes Prompt 8 into Claude Design and attaches the HTML here.
+2. Extract each `<svg id="...">` from the HTML. Exports from Claude Design escape the markup inside a JSON string: quotes as `\"`, and closing tags as `<\u002Fsvg>`. Read each element as a JSON string and rename `sc-camel-view-box` to `viewBox`.
+3. Run `node scripts/clean-svg.mjs in.svg out.svg` on each. Menu art goes in `src/art/ui/` (like `src/art/garage/`), not the top folder, because the race engine registers every top-level file.
+4. Load them as data URLs, as `src/ui/art/garageArt.ts` does, and replace `Icons.tsx` and the title logo in `src/ui/screens/Title.tsx`. Keep the logo as text in the page title for screen readers.
+5. Add the folder to `src/test/art.test.ts` like the garage block.
+**Done when:** every menu screen uses the new icons, the title shows the new logo at 390 px and 1280 px wide, the art tests cover the new folder, and the pull request has before and after screenshots.
+
+### P2-28. Upgrades visible on the garage bike
+
+**Why:** the old code-drawn garage bikes showed upgrades on the bike (tyre color, exhaust, armour plates). The Prompt 7 art is one fixed drawing per bike, so buying an upgrade no longer changes the bike picture. Players should see what they bought.
+**Do:** pick one of these and confirm with Mayur first:
+- A: ask Claude Design for small overlay pieces per bike (tyre stripe ring, race exhaust, armour plates) in the same 840 x 480 frame, and stack them on the bike in `src/ui/art/BikeArt.tsx` by level.
+- B: in code, tint the tyre sidewalls and add a tier-colored badge and a glow under the bike by level.
+**Done when:** each upgrade level changes the garage picture in a way you can see at 390 px wide.
+
+### P2-29. Sky polish
+
+**Why:** the horizons are art now, but the sky behind them is still flat bands from `palette.sky` in `src/content/tracks.ts`. In the Prompt 6 composites the sky colors are a little different, and the city has no stars in the art.
+**Do:** sample the sky colors from the Prompt 6 composites into each track's `palette.sky`. Check stars only show above the city horizon strip. Optional: a soft glow on the traffic light and on lit windows of the near city strip at night.
+**Done when:** a screenshot of each track sits next to its Prompt 6 composite in the pull request, and they match.
+
+### P2-30. Rider proportions
+
+**Why:** the rider art came from the first Prompt 2 text (big helmet, 160 px tail). The updated Prompt 2 asks for bike-first proportions that read better at speed.
+**Do:** Mayur reruns the updated Prompt 2. Replace the 10 `src/art/rider-*.svg` files using the same file names, with color keys for body, jacket and helmet (see ART.md). Adjust `RIDER_FIT` in `src/engine/svgart.ts` if the size changes.
+**Done when:** riders, police and the player look the same size as now next to cars, and all 10 poses work in a race.
+
 ### P2-23 to P2-27. Game art from Claude Design
 
 **Why:** Mayur's review: the code-drawn graphics are not good enough. Mayur makes the art in Claude Design from 8 prompts; agents wire it in.
@@ -150,6 +199,9 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 | P4-09 | Launch: Product Hunt, Reddit, itch.io, CrazyGames, Poki | todo | P4-05 |
 
 ## Notes
+
+- P2-27 part 1, Oct 2026: 5 garage bikes with their own liveries and 9 upgrade parts from Prompt 7, on the garage, title and career screens. Files in `src/art/garage/`, loaded by `src/ui/art/garageArt.ts`, checked by the art tests. The old code-drawn bikes and parts are removed. Upgrades no longer show on the bike (see P2-28).
+- P2-26, Oct 2026: roadside props for all 4 tracks from Prompts 4 and 5 (coast palms, billboards, lifeguard towers; desert cacti, windmills, signs; mountain pines, logs, rock faces, curve signs; city towers, shopfronts, lamps, traffic lights, bus stops). Props share one scale (`PROP_SCALE`), so the art sheet sizes hold. Billboards, desert signs and shopfronts get words printed by the game. Lamps and traffic lights stand on their pole and reach over the road; lamps glow at night. 12 horizon strips from Prompt 6 tile with parallax, with a ground fill below; sun and moon from art. Wide strips rasterize at a capped size for phone memory. City strips were shrunk under 40 KB by merging same-color rects. Frame time 4 to 13 ms on desktop and phone in a GPU-less browser.
 
 - P2-25, Oct 2026: police in 3 poses with a flashing light bar (two variants, one half dimmed, plus a red or blue glow), 6 traffic vehicles (sedan, hatchback, SUV, van, pickup, semi) with weights and per-kind speeds, semi hit box 1.35 times a car, tail light glows read from each asset's `tail` rects. Every in-race sprite except some scenery now comes from Claude Design.
 - P2-24, Oct 2026: 10 rider poses from Prompt 2 in game (ride, punch, kick, hurt, club and chain hold and swing, two crash poses), mirrored for the left, repainted per rider, preloaded per race. This art came from the earlier Prompt 2 text (big helmet, 160 px tail); rerunning the updated Prompt 2 only needs the 10 files replaced. Police stay code-drawn until Prompt 3.

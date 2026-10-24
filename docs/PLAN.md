@@ -101,7 +101,13 @@ Goal: give players a reason to come back tomorrow.
 - [x] Career mode: 5 levels, harder rivals each level
 - [x] Gamepad support, PWA install
 - [x] Guest save in the browser with save codes. Sign in and sync moved to Phase 3, which brings the backend (decision D5)
+- [x] New menus and garage with bike and part pictures (P2-21)
+- [x] Game art from Claude Design, cel-shaded 90s arcade poster look: riders, police, traffic, roadside props on all 4 tracks, horizons, sun and moon, garage bikes and parts (P2-23 to P2-27, see docs/ART.md)
+- [ ] Icons and title art from Prompt 8 (rest of P2-27)
 - [ ] Deploy, analytics, phone performance checks, comfort settings, music, balance (tasks P2-12 to P2-18)
+- [ ] Name and domain (P2-19, Mayur)
+
+Where we are (24 Oct 2026): Phase 2 features and nearly all art are in. What blocks the Phase 3 gate is measurement: the game is not hosted yet (P2-14), so there is no analytics (P2-13) and no retention data. Do P2-14 next, then P2-13, then P2-12. The next agent should start from the "Next up" list in docs/TASKS.md.
 
 **Gate to Phase 3:** day 1 retention at 35 percent or more, average 8 races per player per day.
 
