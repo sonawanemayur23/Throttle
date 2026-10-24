@@ -6,7 +6,7 @@ import { LEVELS, QUALIFY_PLACE } from '../content/career';
 import { TRACKS } from '../content/tracks';
 
 export const SAVE_KEY = 'throttle.save';
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export interface OwnedBike {
   upgrades: Record<UpgradeKind, number>;
@@ -20,7 +20,7 @@ export interface SaveData {
   /** Best place per level per track: career[level][trackId] = place. */
   career: Record<number, Record<string, number>>;
   bestScore: Record<string, number>;
-  settings: { muted: boolean; hints: boolean };
+  settings: { muted: boolean; hints: boolean; /** 0 is off, 1 is full. Separate from the sound mute. */ music: number };
   stats: { races: number; wins: number; kos: number; busted: number };
 }
 
@@ -32,7 +32,7 @@ export function newSave(): SaveData {
     selectedBike: BIKES[0].id,
     career: {},
     bestScore: {},
-    settings: { muted: false, hints: true },
+    settings: { muted: false, hints: true, music: 0.7 },
     stats: { races: 0, wins: 0, kos: 0, busted: 0 },
   };
 }
@@ -48,7 +48,11 @@ export function migrate(raw: unknown): SaveData {
     selectedBike: typeof r.selectedBike === 'string' ? r.selectedBike : fresh.selectedBike,
     career: typeof r.career === 'object' && r.career ? r.career : {},
     bestScore: typeof r.bestScore === 'object' && r.bestScore ? r.bestScore : {},
-    settings: { ...fresh.settings, ...(r.settings ?? {}) },
+    settings: {
+      ...fresh.settings,
+      ...(r.settings ?? {}),
+      music: musicLevel((r.settings as { music?: unknown } | undefined)?.music),
+    },
     stats: { ...fresh.stats, ...(r.stats ?? {}) },
     bikes: {},
   };
@@ -98,7 +102,8 @@ export function importCode(code: string): SaveData | null {
   try {
     const json = decodeURIComponent(escape(atob(code.trim())));
     const data = JSON.parse(json);
-    if (!data || data.version !== SAVE_VERSION) return null;
+    // Older codes still load. A newer code waits for this build to catch up.
+    if (!data || typeof data.version !== 'number' || data.version < 1 || data.version > SAVE_VERSION) return null;
     return migrate(data);
   } catch {
     return null;
@@ -178,6 +183,11 @@ export function buyUpgrade(s: SaveData, bikeId: string, kind: UpgradeKind): BuyR
   next.cash -= cost;
   next.bikes[bikeId].upgrades[kind] = lvl + 1;
   return { ok: true, save: next };
+}
+
+function musicLevel(v: unknown) {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return 0.7;
+  return Math.min(1, Math.max(0, v));
 }
 
 function structuredCloneSafe<T>(v: T): T {

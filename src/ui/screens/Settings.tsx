@@ -53,6 +53,24 @@ export function Settings({ save, setSave, host, onBack }: Props) {
           <span>Sound</span>
           <input id="setSound" type="checkbox" checked={!save.settings.muted} onChange={() => toggle('muted')} />
         </label>
+        <label className="slider" htmlFor="setMusic">
+          <span>{save.settings.music === 0 ? 'Music off' : `Music ${Math.round(save.settings.music * 100)}%`}</span>
+          <input
+            id="setMusic"
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={Math.round(save.settings.music * 100)}
+            aria-valuetext={save.settings.music === 0 ? 'Off' : `${Math.round(save.settings.music * 100)} percent`}
+            onChange={(e) => {
+              const music = Number(e.target.value) / 100;
+              host.setMusicVolume(music);
+              setSave({ ...save, settings: { ...save.settings, music } });
+            }}
+          />
+        </label>
+        <p className="muted small">Original music, made for this game. Menus share a quieter track. Each highway has its own.</p>
         <label className="switch" htmlFor="setHints">
           <span>Hints in the first 3 races</span>
           <input id="setHints" type="checkbox" checked={save.settings.hints} onChange={() => toggle('hints')} />

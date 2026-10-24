@@ -1,7 +1,11 @@
 // All sounds are synthesized with Web Audio. No audio files to download.
+import { MusicBed } from './music';
+
 export class Sound {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private musicOut: GainNode | null = null;
+  private music = new MusicBed();
   private engOsc1: OscillatorNode | null = null;
   private engOsc2: OscillatorNode | null = null;
   private engFilter: BiquadFilterNode | null = null;
@@ -79,6 +83,12 @@ export class Sound {
     this.master = ctx.createGain();
     this.master.gain.value = this.muted ? 0 : 0.9;
     this.master.connect(comp);
+    // Music bypasses the compressor so the beat does not pump the engine.
+    // Mute still closes this gain, same as the effects bus.
+    this.musicOut = ctx.createGain();
+    this.musicOut.gain.value = this.muted ? 0 : 1;
+    this.musicOut.connect(ctx.destination);
+    this.music.attach(ctx, this.musicOut);
 
     const len = ctx.sampleRate;
     this.noise = ctx.createBuffer(1, len, ctx.sampleRate);
@@ -113,11 +123,30 @@ export class Sound {
 
   setMuted(m: boolean) {
     this.muted = m;
-    if (this.master && this.ctx) this.master.gain.setTargetAtTime(m ? 0 : 0.9, this.ctx.currentTime, 0.02);
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.9, t, 0.02);
+    if (this.musicOut) this.musicOut.gain.setTargetAtTime(m ? 0 : 1, t, 0.02);
+  }
+
+  /** Music level 0..1. 0 leaves the bike audible and drops the loop. */
+  setMusicVolume(v: number) {
+    this.music.setVolume(v);
+  }
+
+  /** `restart` begins at the downbeat. Used when a race starts. */
+  playMusic(id: string, restart = false) {
+    this.music.play(id, restart);
+  }
+
+  /** Pause the loop while the tab is hidden, then resume the same phrase. */
+  setMusicHeld(held: boolean) {
+    this.music.setHeld(held);
   }
 
   /** speedPct 0..1, on = engine audible. */
   engine(speedPct: number, on: boolean) {
+    this.music.setDrive(on, speedPct);
     if (!this.ctx || !this.engOsc1 || !this.engOsc2 || !this.engOsc3 || !this.engFilter || !this.engGain) return;
     const t = this.ctx.currentTime;
     // Fake gear shifts: pitch climbs within each gear band.
