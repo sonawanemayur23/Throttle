@@ -10,6 +10,7 @@ A browser motorbike combat racer. Race on highways, punch and kick rivals off th
 - Task board with IDs, status and acceptance criteria: [docs/TASKS.md](docs/TASKS.md)
 - How the code fits together: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Decisions and why: [docs/DECISIONS.md](docs/DECISIONS.md)
+- Art spec and import steps: [docs/ART.md](docs/ART.md)
 - How we test with players: [docs/PLAYTEST.md](docs/PLAYTEST.md)
 
 ## Setup
@@ -31,6 +32,7 @@ Node 22. No other services needed.
 - Every feature, fix or doc change gets its own branch from the latest `main`.
 - Branch names: `p2-14-pages-deploy` for a task, `fix/short-description` for a bug, `chore/short-description` for tooling and docs.
 - One task per branch and per pull request. Keep pull requests small enough to review in 10 minutes.
+- Every pull request targets `main`. Do not stack pull requests on other branches: merging a stacked PR puts the change on the side branch, not on `main`. If your work needs an unmerged branch, wait for it to merge first.
 - Open the pull request against `main` with the template filled in, then stop. Do not merge it yourself, even when checks pass.
 - If Mayur asks for changes, push more commits to the same branch.
 - Before starting new work, update from `main`: `git fetch origin main && git switch -c <branch> origin/main`.
@@ -58,7 +60,7 @@ If a task is unclear or too big, split it in TASKS.md into smaller tasks with ne
 
 **Performance budget.** 60 fps on a 3 year old Android phone. Simulation under 1 ms per frame, render under 8 ms. Playtest build under 3 MB. No per-frame allocations in hot loops (`render`, `update`).
 
-**No outside assets yet.** Art and sound are drawn and synthesized in code. Do not add image, audio or font files without a decision in DECISIONS.md.
+**Art comes from `src/art/`.** Game art is SVG made to the spec in [docs/ART.md](docs/ART.md); import it with `scripts/clean-svg.mjs`. Do not add raster images, audio or font files without a decision in DECISIONS.md. Sound is synthesized in code.
 
 **Original content only.** No names, art, music, tracks or characters from Road Rash or any other game. No real brand or bike model names.
 

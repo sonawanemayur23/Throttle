@@ -30,10 +30,37 @@ import {
 } from './sprites';
 import type { Pt, Segment, Sprite } from './track';
 import { SpriteCache } from './art';
+import { svgArt, type ArtName } from './svgart';
+
+/** Scenery drawn from SVG art instead of the cached code-drawn stamps. */
+const SVG_SCENERY: Partial<Record<Sprite['kind'], ArtName>> = {
+  palm: 'coast-palm-tall',
+  pine: 'mountain-pine-tall',
+  rock: 'coast-rock',
+};
+const OUTLINE = '#14101F';
 import { hex, lerp, mix, mod, mulberry32, ordinal, type RGB } from './util';
 
 const HUD_FONT = '"Saira Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif';
-const WHITE: RGB = [255, 255, 255];
+/** Sample the palette's 4 sky stops into `n` flat bands. */
+function skyBands(p: Palette, n: number) {
+  const stops: Array<[number, RGB]> = [
+    [0, hex(p.sky[0])],
+    [0.45, hex(p.sky[1])],
+    [0.8, hex(p.sky[2])],
+    [1, hex(p.sky[3])],
+  ];
+  const out: string[] = [];
+  for (let i = 0; i < n; i++) {
+    const t = (i + 0.5) / n;
+    let k = 0;
+    while (k < stops.length - 2 && t > stops[k + 1][0]) k++;
+    const [t0, c0] = stops[k];
+    const [t1, c1] = stops[k + 1];
+    out.push(mix(c0, c1, Math.min(1, Math.max(0, (t - t0) / (t1 - t0)))));
+  }
+  return out;
+}
 
 interface RoadColors {
   fog: RGB;
@@ -101,9 +128,8 @@ export class Renderer {
   private night = false;
   private cache = new SpriteCache();
   private vignette: HTMLCanvasElement | null = null;
-  /** Ridge fill colors per layer: [top, base]. */
-  private ridgeFill: Array<[string, string]> = [];
-  private cloudTint = '255,255,255';
+  /** Flat sky band colors, top to horizon, for the current track. */
+  private bands: string[] = [];
   private lines: Array<{ a: number; r: number; len: number; speed: number }> = [];
 
   /** Pass `fixed` to draw at a set size (track previews) instead of filling the window. */
@@ -127,6 +153,7 @@ export class Renderer {
     });
     for (let i = 0; i < 90; i++) this.stars.push([rng(), rng() * 0.5, rng()]);
     for (let i = 0; i < 40; i++) this.lines.push({ a: Math.random() * Math.PI * 2, r: Math.random(), len: 0.1 + Math.random() * 0.2, speed: 1 + Math.random() });
+    svgArt.preload();
     this.resize();
   }
 
@@ -182,10 +209,7 @@ export class Renderer {
       this.def = g.track.def;
       this.C = roadColors(this.def.palette);
       this.night = !!this.def.palette.night;
-      const fogC = hex(this.def.palette.fog);
-      this.ridgeFill = this.def.palette.ridges.map((c, i) => [mix(hex(c), WHITE, 0.1), mix(hex(c), fogC, 0.25 + i * 0.12)] as [string, string]);
-      const t = hex(this.def.palette.sky[3]).map((v) => Math.round(v + (255 - v) * 0.55));
-      this.cloudTint = t.join(',');
+      this.bands = skyBands(this.def.palette, 14);
       this.cache.prewarm(this.def.scenery.map(([k]) => k));
     }
 
@@ -489,6 +513,18 @@ export class Renderer {
 
   private drawSprite(sp: Sprite, x: number, y: number, w: number) {
     const ctx = this.ctx;
+    const art = SVG_SCENERY[sp.kind];
+    // Mirror half the props so a row of the same drawing does not look stamped.
+    if (art) {
+      if (sp.variant < 0.5) {
+        ctx.save();
+        ctx.translate(x, 0);
+        ctx.scale(-1, 1);
+        const ok = svgArt.draw(ctx, art, 0, y, w);
+        ctx.restore();
+        if (ok) return;
+      } else if (svgArt.draw(ctx, art, x, y, w)) return;
+    }
     const stamp = this.cache.get(sp.kind, sp.variant);
     if (stamp) {
       if (w < 1) return;
@@ -523,90 +559,128 @@ export class Renderer {
     }
   }
 
+  /** Sky color at height y, from the flat bands built for this track. */
+  private bandAt(y: number) {
+    const n = this.bands.length;
+    const i = Math.max(0, Math.min(n - 1, Math.floor((y / (this.h * 0.5)) * n)));
+    return this.bands[i] ?? '#000';
+  }
+
   private drawSky(playerY: number) {
     const ctx = this.ctx;
     const { w, h } = this;
     const pal = this.def?.palette;
     if (!pal) return;
-    const sky = ctx.createLinearGradient(0, 0, 0, h * 0.6);
-    sky.addColorStop(0, pal.sky[0]);
-    sky.addColorStop(0.45, pal.sky[1]);
-    sky.addColorStop(0.8, pal.sky[2]);
-    sky.addColorStop(1, pal.sky[3]);
-    ctx.fillStyle = sky;
-    ctx.fillRect(0, 0, w, h);
+
+    // Flat horizontal bands, like 90s arcade skies. Bands thin out toward the horizon.
+    const n = this.bands.length;
+    const horizon = h * 0.5;
+    for (let i = 0; i < n; i++) {
+      const y0 = horizon * (1 - Math.pow(1 - i / n, 1.35));
+      const y1 = i === n - 1 ? h * 0.66 : horizon * (1 - Math.pow(1 - (i + 1) / n, 1.35));
+      ctx.fillStyle = this.bands[i];
+      ctx.fillRect(0, Math.floor(y0), w, Math.ceil(y1 - y0) + 1);
+    }
 
     if (pal.night) {
       for (const [x, y, b] of this.stars) {
-        ctx.fillStyle = `rgba(255,255,255,${0.3 + b * 0.6})`;
-        const sz = Math.max(1, (w / 900) * (1 + b));
+        ctx.fillStyle = b > 0.7 ? '#ffffff' : 'rgba(255,255,255,0.55)';
+        const sz = Math.max(1, Math.round((w / 900) * (1 + b)));
         ctx.fillRect(((x + this.skyOffset * 0.3) % 1) * w, y * h, sz, sz);
       }
     }
 
-    // Sun or moon, drifting with the curves.
+    // Sun or moon, drifting with the curves. Flat two-tone shapes, no glow.
     const sx = w * (0.5 + ((this.skyOffset * 3) % 1) - 0.5);
-    const sy = h * (pal.sun === 'moon' ? 0.2 : 0.4);
-    const r = h * (pal.sun === 'sun' ? 0.18 : 0.1);
-    const glow = ctx.createRadialGradient(sx, sy, 0, sx, sy, r);
+    const unit = Math.min(w, h * 1.4);
     if (pal.sun === 'sun') {
-      glow.addColorStop(0, 'rgba(255,240,190,1)');
-      glow.addColorStop(0.5, 'rgba(255,200,120,0.9)');
-      glow.addColorStop(1, 'rgba(255,170,90,0)');
-    } else if (pal.sun === 'pale') {
-      glow.addColorStop(0, 'rgba(255,252,240,0.95)');
-      glow.addColorStop(0.35, 'rgba(255,245,220,0.6)');
-      glow.addColorStop(1, 'rgba(255,245,220,0)');
-    } else {
-      glow.addColorStop(0, 'rgba(240,240,255,1)');
-      glow.addColorStop(0.3, 'rgba(220,225,255,0.9)');
-      glow.addColorStop(0.35, 'rgba(180,190,255,0.25)');
-      glow.addColorStop(1, 'rgba(180,190,255,0)');
-    }
-    ctx.fillStyle = glow;
-    ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
-
-    // Clouds drift with the curves. None at night.
-    if (!pal.night) {
-      ctx.globalAlpha = 0.55;
-      for (let i = 0; i < 6; i++) {
-        const img = this.cache.cloud(i % 3, this.cloudTint);
-        const cw = w * (0.32 + (i % 3) * 0.08);
-        const ch = (cw * img.height) / img.width;
-        const x = ((((i * 0.19 + this.skyOffset * (0.4 + (i % 2) * 0.2)) % 1) + 1) % 1) * (w + cw) - cw;
-        const y = h * (0.06 + ((i * 37) % 23) / 100);
-        ctx.drawImage(img, x, y, cw, ch);
+      const sy = h * 0.4;
+      const r = unit * 0.13;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = '#FFB347';
+      ctx.fillRect(sx - r, sy - r, r * 2, r * 2);
+      ctx.fillStyle = '#FFE08A';
+      ctx.fillRect(sx - r, sy - r, r * 2, r * 0.9);
+      // Horizontal cuts across the lower half show the sky through the sun.
+      for (let k = 0; k < 4; k++) {
+        const y = sy + r * (0.12 + k * 0.22);
+        const t = r * (0.05 + k * 0.035);
+        ctx.fillStyle = this.bandAt(y);
+        ctx.fillRect(sx - r, y, r * 2, t);
       }
-      ctx.globalAlpha = 1;
+      ctx.restore();
+    } else if (pal.sun === 'noon') {
+      const sy = h * 0.14;
+      const r = unit * 0.035;
+      ctx.fillStyle = '#FFF0B0';
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#FFFDF0';
+      ctx.beginPath();
+      ctx.arc(sx - r * 0.2, sy - r * 0.2, r * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (pal.sun === 'pale') {
+      const sy = h * 0.3;
+      const r = unit * 0.06;
+      ctx.fillStyle = 'rgba(255,250,232,0.55)';
+      ctx.beginPath();
+      ctx.arc(sx, sy, r * 1.35, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#FFF8E4';
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      const sy = h * 0.17;
+      const r = unit * 0.045;
+      ctx.fillStyle = '#E9E4CF';
+      ctx.beginPath();
+      ctx.arc(sx, sy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#CBC4A8';
+      for (const [dx, dy, rr] of [
+        [-0.3, -0.2, 0.22],
+        [0.25, 0.15, 0.3],
+        [-0.15, 0.4, 0.14],
+      ]) {
+        ctx.beginPath();
+        ctx.arc(sx + dx * r, sy + dy * r, rr * r, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
-    // Ridges with parallax, or a city skyline. Hills shift them up and down a little.
+    // Ridges with parallax, or a city skyline. Flat fills; the two nearer
+    // layers get a dark outline along the top, like the rest of the art.
     const lift = playerY / 30000;
+    const lw = Math.max(1.5, h / 380);
     this.ridges.forEach((pts, layer) => {
       const speed = [0.6, 1, 1.6][layer];
       const off = (this.skyOffset * speed) % 1;
       const baseY = h * (0.5 + layer * 0.025) + lift * h * (layer + 1) * 0.03;
       const amp = h * (0.16 - layer * 0.035);
-      // Lit tops fading into haze at the base.
-      const fill = this.ridgeFill[layer];
-      const grad = ctx.createLinearGradient(0, baseY - amp, 0, baseY);
-      grad.addColorStop(0, fill ? fill[0] : pal.ridges[layer]);
-      grad.addColorStop(1, fill ? fill[1] : pal.ridges[layer]);
-      ctx.fillStyle = grad;
-      const n = pts.length;
+      ctx.fillStyle = pal.ridges[layer];
+      ctx.strokeStyle = OUTLINE;
+      ctx.lineWidth = lw;
+      ctx.lineJoin = 'round';
+      const np = pts.length;
       if (pal.skyline) {
-        // Blocks: one tower per point, with a few lit windows on the nearest layer.
+        // Blocks: one tower per point, with lit windows on the nearest layer.
         const cols = 24 + layer * 6;
         const bw = w / cols;
         const shift = off * bw * cols;
         for (let i = -1; i <= cols; i++) {
-          const idx = ((i + Math.floor(shift / bw)) % n + n) % n;
+          const idx = (((i + Math.floor(shift / bw)) % np) + np) % np;
           const x = i * bw - (shift % bw);
-          const top = baseY - pts[idx] * amp * 1.3;
-          ctx.fillStyle = grad;
+          const top = Math.round(baseY - pts[idx] * amp * 1.3);
+          ctx.fillStyle = pal.ridges[layer];
           ctx.fillRect(x, top, bw + 1, h - top);
+          if (layer > 0) ctx.strokeRect(x, top, bw + 1, h - top);
           if (layer === 2 && bw > 12) {
-            ctx.fillStyle = 'rgba(255,215,120,0.55)';
+            ctx.fillStyle = '#FFD77A';
             for (let yy = top + bw * 0.4; yy < baseY; yy += bw * 0.5)
               if ((idx * 7 + Math.floor(yy)) % 3 === 0) ctx.fillRect(x + bw * 0.3, yy, bw * 0.15, bw * 0.15);
           }
@@ -617,24 +691,16 @@ export class Renderer {
       ctx.moveTo(0, h);
       for (let i = 0; i <= 32; i++) {
         const u = i / 32 + off;
-        const f = (u * n) % n;
+        const f = (u * np) % np;
         const i0 = Math.floor(f);
-        const v = lerp(pts[(i0 + n) % n], pts[(i0 + 1 + n) % n], f - i0);
+        const v = lerp(pts[(i0 + np) % np], pts[(i0 + 1 + np) % np], f - i0);
         ctx.lineTo((i / 32) * w, baseY - v * amp);
       }
       ctx.lineTo(w, h);
       ctx.closePath();
       ctx.fill();
+      if (layer > 0) ctx.stroke();
     });
-
-    // Haze where the land meets the sky.
-    const hy = h * 0.5;
-    const haze = ctx.createLinearGradient(0, hy - h * 0.09, 0, hy + h * 0.02);
-    const fogRGB = hex(pal.fog);
-    haze.addColorStop(0, `rgba(${fogRGB[0]},${fogRGB[1]},${fogRGB[2]},0)`);
-    haze.addColorStop(1, `rgba(${fogRGB[0]},${fogRGB[1]},${fogRGB[2]},${pal.night ? 0.35 : 0.55})`);
-    ctx.fillStyle = haze;
-    ctx.fillRect(0, hy - h * 0.09, w, h * 0.11);
   }
 
   private poly(x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, x4: number, y4: number, color: string) {
