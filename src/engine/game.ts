@@ -120,6 +120,9 @@ export interface RaceSetup {
   bike: BikeStats;
   level: LevelDef;
   tutorial: boolean;
+  /** No screen shake and no slow motion. */
+  reduceMotion?: boolean;
+  vibration?: boolean;
 }
 
 export interface Results {
@@ -246,6 +249,8 @@ export class Game {
   flashColor = '255,255,255';
   hitstopUntil = 0;
   slowmoUntil = 0;
+  reduceMotion = false;
+  vibration = true;
   results: Results | null = null;
   steer = 0;
   /** First races show short hints that teach the controls. */
@@ -282,6 +287,13 @@ export class Game {
     if (setup.track.id !== this.track.def.id) this.track = new Track(setup.track);
     this.setup = setup;
     this.tutorial = setup.tutorial;
+    this.reduceMotion = setup.reduceMotion === true;
+    this.vibration = setup.vibration !== false;
+  }
+
+  private buzz(p: number | number[]) {
+    if (!this.vibration) return;
+    vibrate(p);
   }
 
   reset() {
@@ -389,7 +401,7 @@ export class Game {
     this.clock += dtReal;
     let ts = 1;
     if (this.clock < this.hitstopUntil) ts = 0.06;
-    else if (this.clock < this.slowmoUntil) ts = 0.28;
+    else if (!this.reduceMotion && this.clock < this.slowmoUntil) ts = 0.28;
     const dt = dtReal * ts;
 
     this.shake = Math.max(0, this.shake - dtReal * 40);
@@ -589,7 +601,7 @@ export class Game {
     this.shake = Math.max(this.shake, kind === 'weapon' ? 13 : heavy ? 10 : 6);
     this.events.push({ kind: 'spark', at: best, side });
     this.sound.hit(heavy);
-    vibrate(kind === 'weapon' ? 35 : heavy ? 25 : 12);
+    this.buzz(kind === 'weapon' ? 35 : heavy ? 25 : 12);
 
     if (best === this.cop) {
       if (best.hp <= 0) this.knockOutCop();
@@ -651,7 +663,7 @@ export class Game {
     this.events.push({ kind: 'cash', at: r, side: 0 });
     this.sound.knockout();
     setTimeout(() => this.sound.coin(), 250);
-    vibrate([30, 40, 60]);
+    this.buzz([30, 40, 60]);
   }
 
   private hurtPlayer(dmg: number, side: number, by: Rider) {
@@ -669,7 +681,7 @@ export class Game {
     this.flash = 0.35;
     this.flashColor = '255,40,40';
     this.sound.hurt();
-    vibrate(20);
+    this.buzz(20);
     if (p.hp < p.hpMax * 0.45) this.showHint('health', 'Health low. Back off and it refills.', 2.5);
     if (p.hp <= 0) this.crashPlayer('WIPED OUT');
   }
@@ -689,7 +701,7 @@ export class Game {
     this.popup(label, '#ff5a3c', true);
     this.events.push({ kind: 'dust', at: { sx: 0, sy: 0, sw: 0, visible: false }, side: 0 });
     this.sound.crash();
-    vibrate([60, 30, 120]);
+    this.buzz([60, 30, 120]);
   }
 
   // -------------------------------------------------------------------------

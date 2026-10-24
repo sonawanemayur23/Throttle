@@ -1,16 +1,26 @@
 import { useEffect, useRef } from 'react';
+import { RACE_ACTIONS, actionLabel, keyLabel, type RaceAction } from '../../save/save';
 import { TopNav } from '../parts';
 
-const ROWS: Array<[string, string, string, string]> = [
-  ['Steer', '← → or A D', 'Hold the left pad. Slide further to turn harder', 'Left stick or d-pad'],
-  ['Throttle', '↑ or W', 'Automatic', 'Right trigger'],
-  ['Brake', '↓ or S', 'BRAKE', 'Left trigger'],
-  ['Punch', 'J or Z', 'PUNCH', 'X'],
-  ['Kick', 'K or X', 'KICK', 'A or B'],
-  ['Swing weapon', 'L or C', 'Weapon button, shown when you hold one', 'Y'],
-  ['Pause', 'P or Esc', 'Pause button, top center', 'Start'],
-  ['Sound', 'M', 'Sound and music in Settings', ''],
-];
+const TOUCH: Record<RaceAction, string> = {
+  left: 'Hold the left pad. Slide further to turn harder',
+  right: 'Hold the left pad. Slide further to turn harder',
+  up: 'Automatic',
+  down: 'BRAKE',
+  punch: 'PUNCH',
+  kick: 'KICK',
+  weapon: 'Weapon button, shown when you hold one',
+};
+
+const PAD: Record<RaceAction, string> = {
+  left: 'Left stick or d-pad',
+  right: 'Left stick or d-pad',
+  up: 'Right trigger',
+  down: 'Left trigger',
+  punch: 'X',
+  kick: 'A or B',
+  weapon: 'Y',
+};
 
 const TIPS: Array<[string, string]> = [
   ['Fighting', 'Ride next to a rider, within half a lane, then punch or kick. Kicks hit harder, reach further and push riders toward traffic.'],
@@ -21,7 +31,7 @@ const TIPS: Array<[string, string]> = [
   ['Bonus', 'Pass cars closely at speed for a near miss. Chain hits and near misses for a combo up to x10.'],
 ];
 
-export function Help({ onBack }: { onBack: () => void }) {
+export function Help({ onBack, keys }: { onBack: () => void; keys: Record<RaceAction, string[]> }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     ref.current?.scrollTo(0, 0);
@@ -44,23 +54,37 @@ export function Help({ onBack }: { onBack: () => void }) {
               </tr>
             </thead>
             <tbody>
-              {ROWS.map(([a, k, t, g]) => (
-                <tr key={a}>
-                  <td>{a}</td>
+              {RACE_ACTIONS.map((action) => (
+                <tr key={action}>
+                  <td>{actionLabel(action)}</td>
                   <td>
-                    {k.split(' or ').map((part, i) => (
-                      <span key={part}>
+                    {keys[action].map((code, i) => (
+                      <span key={code}>
                         {i > 0 && ' or '}
-                        {part.split(' ').map((key) => (
-                          <kbd key={key}>{key}</kbd>
-                        ))}
+                        <kbd>{keyLabel(code)}</kbd>
                       </span>
                     ))}
                   </td>
-                  <td>{t}</td>
-                  <td>{g}</td>
+                  <td>{TOUCH[action]}</td>
+                  <td>{PAD[action]}</td>
                 </tr>
               ))}
+              <tr>
+                <td>Pause</td>
+                <td>
+                  <kbd>P</kbd> or <kbd>Esc</kbd>
+                </td>
+                <td>Pause button, top center</td>
+                <td>Start</td>
+              </tr>
+              <tr>
+                <td>Sound</td>
+                <td>
+                  <kbd>M</kbd>
+                </td>
+                <td>Sound and music in Settings</td>
+                <td />
+              </tr>
             </tbody>
           </table>
         </div>

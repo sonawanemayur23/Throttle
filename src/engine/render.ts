@@ -320,7 +320,7 @@ export class Renderer {
     }
 
     ctx.save();
-    if (g.shake > 0) ctx.translate((Math.random() - 0.5) * g.shake * (w / 800), (Math.random() - 0.5) * g.shake * (w / 800));
+    if (!g.reduceMotion && g.shake > 0) ctx.translate((Math.random() - 0.5) * g.shake * (w / 800), (Math.random() - 0.5) * g.shake * (w / 800));
 
     this.drawSky(playerY);
 

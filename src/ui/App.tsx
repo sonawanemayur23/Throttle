@@ -61,6 +61,7 @@ export function App({ host }: { host: GameHost }) {
   useEffect(() => {
     host.setMuted(saveRef.current.settings.muted);
     host.setMusicVolume(saveRef.current.settings.music);
+    host.applyComfort(saveRef.current.settings);
     host.attract(raceSetup(saveRef.current, 1, TRACKS[0].id));
     host.onPauseChange = setPaused;
     host.onMuteToggle = () => {
@@ -92,6 +93,10 @@ export function App({ host }: { host: GameHost }) {
   useEffect(() => {
     host.setMusicVolume(save.settings.music);
   }, [host, save.settings.music]);
+
+  useEffect(() => {
+    host.applyComfort(save.settings);
+  }, [host, save.settings]);
 
   // Enter, Space or the gamepad A button act on the main button of each screen.
   useEffect(() => {
@@ -126,7 +131,7 @@ export function App({ host }: { host: GameHost }) {
         />
       )}
       {screen === 'garage' && <Garage save={save} setSave={setSave} go={go} back={() => setScreen(back === 'garage' ? 'career' : 'career')} />}
-      {screen === 'help' && <Help onBack={() => setScreen(back)} />}
+      {screen === 'help' && <Help keys={save.settings.keys} onBack={() => setScreen(back)} />}
       {screen === 'settings' && <Settings save={save} setSave={setSave} host={host} onBack={() => setScreen(back)} />}
       {screen === 'race' && paused && (
         <Pause

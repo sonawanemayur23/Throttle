@@ -29,7 +29,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-13 | Analytics for the Phase 2 gate | todo | | P2-14 |
 | P2-14 | Deploy the hosted build to GitHub Pages | doing | Cursor | |
 | P2-15 | Auto quality setting for slow devices | todo | | P2-12 |
-| P2-16 | Settings: reduce motion, vibration toggle, key remapping | todo | | |
+| P2-16 | Settings: reduce motion, vibration toggle, key remapping | done | Cursor | |
 | P2-17 | Original music loop and engine sound polish | done | Cursor | |
 | P2-18 | Balance pass from playtest data | todo | | P2-13 |
 | P2-19 | Pick the final name and buy the domain | todo | Mayur | |
@@ -78,6 +78,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 
 **Do:** add to Settings: reduce motion (no screen shake, no slow motion), vibration on or off, and keyboard remapping for the 7 race actions. Keep defaults as today. Save in `settings` with a save version bump and migration.
 **Done when:** each toggle works, persists, and has a test in `save.test.ts` for the migration.
+**Notes:** P2-16, Oct 2026: Save version 3. Reduce motion skips shake and slow motion. Vibration defaults on. Each race action can be put on one key. Menu keys stay reserved.
 
 ### P2-17. Music and sound
 

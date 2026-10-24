@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { GameHost } from '../../app/host';
-import { exportCode, importCode, newSave, type SaveData } from '../../save/save';
+import { DEFAULT_KEYS, RACE_ACTIONS, actionLabel, exportCode, importCode, keyLabel, newSave, rebind, type RaceAction, type SaveData } from '../../save/save';
 import { TopNav } from '../parts';
 
 interface Props {
@@ -14,9 +14,29 @@ export function Settings({ save, setSave, host, onBack }: Props) {
   const [code, setCode] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [listening, setListening] = useState<RaceAction | null>(null);
+  const [keyError, setKeyError] = useState<string | null>(null);
   const myCode = exportCode(save);
 
-  const toggle = (key: 'muted' | 'hints') => {
+  useEffect(() => {
+    if (!listening) {
+      host.cancelListen();
+      return;
+    }
+    host.listenForKey((pressed) => {
+      const result = rebind(save.settings.keys, listening, pressed);
+      setListening(null);
+      if (!result.ok) {
+        setKeyError(result.reason);
+        return;
+      }
+      setKeyError(null);
+      setSave({ ...save, settings: { ...save.settings, keys: result.keys } });
+    });
+    return () => host.cancelListen();
+  }, [host, listening, save, setSave]);
+
+  const toggle = (key: 'muted' | 'hints' | 'reduceMotion' | 'vibration') => {
     const next = { ...save, settings: { ...save.settings, [key]: !save.settings[key] } };
     if (key === 'muted') host.setMuted(next.settings.muted);
     setSave(next);
@@ -75,6 +95,73 @@ export function Settings({ save, setSave, host, onBack }: Props) {
           <span>Hints in the first 3 races</span>
           <input id="setHints" type="checkbox" checked={save.settings.hints} onChange={() => toggle('hints')} />
         </label>
+        <label className="switch" htmlFor="setMotion">
+          <span>Reduce motion</span>
+          <input id="setMotion" type="checkbox" checked={save.settings.reduceMotion} onChange={() => toggle('reduceMotion')} />
+        </label>
+        <p className="muted small">Turns off screen shake and slow motion.</p>
+        <label className="switch" htmlFor="setVibration">
+          <span>Vibration</span>
+          <input id="setVibration" type="checkbox" checked={save.settings.vibration} onChange={() => toggle('vibration')} />
+        </label>
+        <p className="muted small">Phone buttons buzz when you tap them. Hits buzz during a race.</p>
+
+        <div className="panel group">
+          <h3 className="display">Race keys</h3>
+          <div className="key-list">
+            {RACE_ACTIONS.map((action) => (
+              <div className="key-row" key={action}>
+                <span>{actionLabel(action)}</span>
+                <span className="keys">
+                  {(listening === action ? [] : save.settings.keys[action]).map((k) => (
+                    <kbd key={k}>{keyLabel(k)}</kbd>
+                  ))}
+                </span>
+                <button
+                  type="button"
+                  className="btn alt"
+                  aria-pressed={listening === action}
+                  onClick={() => {
+                    setKeyError(null);
+                    setListening(listening === action ? null : action);
+                  }}
+                >
+                  {listening === action ? 'Press a key' : 'Change'}
+                </button>
+              </div>
+            ))}
+          </div>
+          {keyError && (
+            <p className="msg" role="status">
+              {keyError}
+            </p>
+          )}
+          <button
+            type="button"
+            className="btn alt"
+            onClick={() => {
+              setListening(null);
+              setKeyError(null);
+              setSave({
+                ...save,
+                settings: {
+                  ...save.settings,
+                  keys: {
+                    left: [...DEFAULT_KEYS.left],
+                    right: [...DEFAULT_KEYS.right],
+                    up: [...DEFAULT_KEYS.up],
+                    down: [...DEFAULT_KEYS.down],
+                    punch: [...DEFAULT_KEYS.punch],
+                    kick: [...DEFAULT_KEYS.kick],
+                    weapon: [...DEFAULT_KEYS.weapon],
+                  },
+                },
+              });
+            }}
+          >
+            Reset keys
+          </button>
+        </div>
 
         <div className="panel group">
           <h3 className="display">Move your progress</h3>

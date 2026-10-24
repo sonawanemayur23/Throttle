@@ -4,7 +4,7 @@
 
 import { Sound } from '../engine/audio';
 import { Game, WEAPONS, type RaceSetup, type Results } from '../engine/game';
-import { Input } from '../engine/input';
+import { Input, type Btn } from '../engine/input';
 import { Renderer } from '../engine/render';
 
 type Listener<T> = (v: T) => void;
@@ -89,6 +89,23 @@ export class GameHost {
 
   setMusicVolume(v: number) {
     this.sound.setMusicVolume(v);
+  }
+
+  /** Apply the comfort settings: shake, buzz and which keys drive the bike. */
+  applyComfort(settings: { reduceMotion: boolean; vibration: boolean; keys: Record<Btn, string[]> }) {
+    this.game.reduceMotion = settings.reduceMotion;
+    this.game.vibration = settings.vibration;
+    this.input.vibration = settings.vibration;
+    this.input.setBindings(settings.keys);
+  }
+
+  /** The next key press goes to Settings instead of the race. */
+  listenForKey(fn: (code: string) => void) {
+    this.input.listenForKey(fn);
+  }
+
+  cancelListen() {
+    this.input.cancelListen();
   }
 
   /** Drive a demo lap behind the menus. */
