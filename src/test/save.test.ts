@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { BIKES, upgradeCost } from '../content/bikes';
 import { LEVELS } from '../content/career';
 import { TRACKS } from '../content/tracks';
-import { SAVE_VERSION, buyBike, buyUpgrade, exportCode, importCode, migrate, newSave, recordRace, unlockedLevel } from '../save/save';
+import { DEFAULT_KEYMAP } from '../engine/input';
+import { DEFAULT_KEYS, RACE_ACTIONS, SAVE_VERSION, buyBike, buyUpgrade, exportCode, importCode, migrate, newSave, rebind, recordRace, unlockedLevel } from '../save/save';
 
 const race = (level: number, trackId: string, place: number, extra = {}) => ({
   level,
@@ -88,7 +89,7 @@ describe('save', () => {
     const s = migrate({ version: 1, cash: 80, settings: { muted: true, hints: false } });
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.cash).toBe(80);
-    expect(s.settings).toEqual({ muted: true, hints: false, music: 0.7 });
+    expect(s.settings).toEqual({ muted: true, hints: false, music: 0.7, reduceMotion: false, vibration: true, keys: DEFAULT_KEYS });
     expect(migrate({ settings: { music: 9 } }).settings.music).toBe(1);
     expect(migrate({ settings: { music: 0 } }).settings.music).toBe(0);
     expect(migrate({ settings: { music: 'loud' } }).settings.music).toBe(0.7);
@@ -103,5 +104,38 @@ describe('save', () => {
     const future = { ...newSave(), version: SAVE_VERSION + 1 };
     const futureCode = btoa(unescape(encodeURIComponent(JSON.stringify(future))));
     expect(importCode(futureCode)).toBeNull();
+  });
+
+  it('fills comfort defaults on an older save and keeps a custom key', () => {
+    const old = migrate({ version: 2, cash: 10, settings: { muted: false, hints: true, music: 0.4 } });
+    expect(old.settings.reduceMotion).toBe(false);
+    expect(old.settings.vibration).toBe(true);
+    expect(old.settings.music).toBe(0.4);
+    expect(old.settings.keys).toEqual(DEFAULT_KEYS);
+    const custom = migrate({
+      version: 2,
+      settings: { vibration: false, reduceMotion: true, keys: { punch: ['KeyQ'] } },
+    });
+    expect(custom.settings.vibration).toBe(false);
+    expect(custom.settings.reduceMotion).toBe(true);
+    expect(custom.settings.keys.punch).toEqual(['KeyQ']);
+    expect(custom.settings.keys.kick).toEqual(DEFAULT_KEYS.kick);
+  });
+
+  it('keeps menu keys and a key already used by another action', () => {
+    const keys = newSave().settings.keys;
+    expect(rebind(keys, 'punch', 'Escape').ok).toBe(false);
+    expect(rebind(keys, 'punch', 'KeyK').ok).toBe(false);
+    const next = rebind(keys, 'punch', 'KeyQ');
+    expect(next.ok && next.keys.punch).toEqual(['KeyQ']);
+    expect(keys.punch).toEqual(['KeyJ', 'KeyZ']);
+  });
+
+  it('uses the same default keys the race already listens for', () => {
+    const fromSave: Record<string, string> = {};
+    for (const action of RACE_ACTIONS) {
+      for (const code of DEFAULT_KEYS[action]) fromSave[code] = action;
+    }
+    expect(fromSave).toEqual(DEFAULT_KEYMAP);
   });
 });

@@ -14,5 +14,7 @@ export function raceSetup(save: SaveData, level: number, trackId: string): RaceS
     bike: bikeStats(bike, owned.upgrades),
     level: levelDef(level),
     tutorial: save.settings.hints && save.stats.races < 3,
+    reduceMotion: save.settings.reduceMotion,
+    vibration: save.settings.vibration,
   };
 }

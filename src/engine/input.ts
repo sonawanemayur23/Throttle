@@ -1,6 +1,6 @@
 export type Btn = 'left' | 'right' | 'up' | 'down' | 'punch' | 'kick' | 'weapon';
 
-const KEYMAP: Record<string, Btn> = {
+export const DEFAULT_KEYMAP: Record<string, Btn> = {
   ArrowLeft: 'left',
   KeyA: 'left',
   ArrowRight: 'right',
@@ -25,11 +25,15 @@ export class Input {
   private padAxis = 0;
   private padHeld = new Set<Btn>();
   private padPrev = new Set<string>();
+  private codeToBtn: Record<string, Btn> = { ...DEFAULT_KEYMAP };
+  private onCapture: ((code: string) => void) | null = null;
   /** True when a gamepad is connected and has been used. */
   gamepad = false;
   readonly touch: boolean;
   /** Last input came from the screen, not the keyboard. */
   lastTouch: boolean;
+  /** Phone button taps buzz when this is on. */
+  vibration = true;
   onConfirm: (() => void) | null = null;
   onMute: (() => void) | null = null;
   onPause: (() => void) | null = null;
@@ -43,6 +47,13 @@ export class Input {
         this.lastTouch = false;
         document.body.classList.remove('touch');
       }
+      if (this.onCapture && !e.repeat) {
+        e.preventDefault();
+        const fn = this.onCapture;
+        this.onCapture = null;
+        fn(e.code);
+        return;
+      }
       if (e.code === 'Enter' || e.code === 'Space') {
         e.preventDefault();
         if (!e.repeat) this.onConfirm?.();
@@ -53,14 +64,14 @@ export class Input {
         return;
       }
       if (e.code === 'KeyM' && !e.repeat) this.onMute?.();
-      const b = KEYMAP[e.code];
+      const b = this.codeToBtn[e.code];
       if (!b) return;
       e.preventDefault();
       if (!this.held.has(b)) this.pressed.add(b);
       this.held.add(b);
     });
     window.addEventListener('keyup', (e) => {
-      const b = KEYMAP[e.code];
+      const b = this.codeToBtn[e.code];
       if (b) this.held.delete(b);
     });
     window.addEventListener(
@@ -90,7 +101,7 @@ export class Input {
         this.touchHeld.add(b);
         el.classList.add('on');
         try {
-          navigator.vibrate?.(8);
+          if (this.vibration) navigator.vibrate?.(8);
         } catch {
           /* not allowed */
         }
@@ -176,6 +187,24 @@ export class Input {
       reset();
     });
     pad.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  /** Replace the race keys. Call this when the saved bindings change. */
+  setBindings(keys: Record<Btn, string[]>) {
+    const map: Record<string, Btn> = {};
+    for (const action of Object.keys(keys) as Btn[]) {
+      for (const code of keys[action]) map[code] = action;
+    }
+    this.codeToBtn = map;
+  }
+
+  /** The next key press is handed to Settings instead of driving the bike. */
+  listenForKey(fn: (code: string) => void) {
+    this.onCapture = fn;
+  }
+
+  cancelListen() {
+    this.onCapture = null;
   }
 
   releaseAll() {

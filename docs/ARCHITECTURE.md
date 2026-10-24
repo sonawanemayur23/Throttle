@@ -74,7 +74,7 @@ Add a `BikeDef` to `BIKES`. Keep prices in step with prize money in `career.ts`.
 
 ## Save
 
-`src/save/save.ts`. Stored in `localStorage` under `throttle.save` as JSON with a `version`. `migrate()` repairs any shape. Save codes (base64 JSON) move progress between devices until accounts exist.
+`src/save/save.ts`. Stored in `localStorage` under `throttle.save` as JSON with a `version`. `migrate()` repairs any shape. Save codes (base64 JSON) move progress between devices until accounts exist. Settings also store reduce motion, vibration and the seven race keys. The host applies those to the engine. The engine does not read the save.
 
 ## Builds
 

@@ -1057,6 +1057,32 @@ body.touch .controls td:nth-child(4) {
   border-radius: 50%;
   background: var(--gold);
 }
+.key-list {
+  display: grid;
+  gap: 2px;
+}
+.key-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--glass-strong);
+  font-weight: 600;
+}
+.key-row .keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: auto;
+}
+.key-row .btn {
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: 14px;
+  font-style: normal;
+  letter-spacing: 0.02em;
+}
 .group {
   display: grid;
   gap: 8px;

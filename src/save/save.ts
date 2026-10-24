@@ -6,10 +6,85 @@ import { LEVELS, QUALIFY_PLACE } from '../content/career';
 import { TRACKS } from '../content/tracks';
 
 export const SAVE_KEY = 'throttle.save';
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export interface OwnedBike {
   upgrades: Record<UpgradeKind, number>;
+}
+
+/** The seven race actions a player can put on a key. */
+export const RACE_ACTIONS = ['left', 'right', 'up', 'down', 'punch', 'kick', 'weapon'] as const;
+export type RaceAction = (typeof RACE_ACTIONS)[number];
+
+/** Defaults match the keys the game has always used. Each action can have more than one. */
+export const DEFAULT_KEYS: Record<RaceAction, string[]> = {
+  left: ['ArrowLeft', 'KeyA'],
+  right: ['ArrowRight', 'KeyD'],
+  up: ['ArrowUp', 'KeyW'],
+  down: ['ArrowDown', 'KeyS'],
+  punch: ['KeyJ', 'KeyZ'],
+  kick: ['KeyK', 'KeyX'],
+  weapon: ['KeyL', 'KeyC'],
+};
+
+const RESERVED_KEYS = new Set(['Enter', 'Space', 'Escape', 'KeyP', 'KeyM']);
+
+const ACTION_LABEL: Record<RaceAction, string> = {
+  left: 'Steer left',
+  right: 'Steer right',
+  up: 'Throttle',
+  down: 'Brake',
+  punch: 'Punch',
+  kick: 'Kick',
+  weapon: 'Swing weapon',
+};
+
+export function actionLabel(action: RaceAction) {
+  return ACTION_LABEL[action];
+}
+
+export function keyLabel(code: string) {
+  const named: Record<string, string> = { ArrowLeft: 'Left', ArrowRight: 'Right', ArrowUp: 'Up', ArrowDown: 'Down', Space: 'Space' };
+  if (named[code]) return named[code];
+  if (code.startsWith('Key') && code.length === 4) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  return code;
+}
+
+function copyKeys(keys: Record<RaceAction, string[]>): Record<RaceAction, string[]> {
+  return {
+    left: [...keys.left],
+    right: [...keys.right],
+    up: [...keys.up],
+    down: [...keys.down],
+    punch: [...keys.punch],
+    kick: [...keys.kick],
+    weapon: [...keys.weapon],
+  };
+}
+
+function normalizeKeys(raw: unknown): Record<RaceAction, string[]> {
+  const out = copyKeys(DEFAULT_KEYS);
+  if (!raw || typeof raw !== 'object') return out;
+  const src = raw as Partial<Record<RaceAction, unknown>>;
+  for (const action of RACE_ACTIONS) {
+    const list = src[action];
+    if (!Array.isArray(list)) continue;
+    const codes = list.filter((code): code is string => typeof code === 'string' && code.length > 0 && code.length <= 32 && !RESERVED_KEYS.has(code));
+    if (codes.length > 0) out[action] = codes;
+  }
+  return out;
+}
+
+/** Put one key on an action. Menus keys and a key already used by another action stay as they are. */
+export function rebind(keys: Record<RaceAction, string[]>, action: RaceAction, code: string): { ok: true; keys: Record<RaceAction, string[]> } | { ok: false; reason: string } {
+  if (!code || RESERVED_KEYS.has(code)) return { ok: false, reason: 'That key opens menus. Pick another.' };
+  for (const other of RACE_ACTIONS) {
+    if (other !== action && keys[other].includes(code)) return { ok: false, reason: `${ACTION_LABEL[other]} already uses that key. Pick another.` };
+  }
+  const next = copyKeys(keys);
+  next[action] = [code];
+  return { ok: true, keys: next };
 }
 
 export interface SaveData {
@@ -20,7 +95,16 @@ export interface SaveData {
   /** Best place per level per track: career[level][trackId] = place. */
   career: Record<number, Record<string, number>>;
   bestScore: Record<string, number>;
-  settings: { muted: boolean; hints: boolean; /** 0 is off, 1 is full. Separate from the sound mute. */ music: number };
+  settings: {
+    muted: boolean;
+    hints: boolean;
+    /** 0 is off, 1 is full. Separate from the sound mute. */
+    music: number;
+    /** No screen shake and no slow motion. */
+    reduceMotion: boolean;
+    vibration: boolean;
+    keys: Record<RaceAction, string[]>;
+  };
   stats: { races: number; wins: number; kos: number; busted: number };
 }
 
@@ -32,7 +116,7 @@ export function newSave(): SaveData {
     selectedBike: BIKES[0].id,
     career: {},
     bestScore: {},
-    settings: { muted: false, hints: true, music: 0.7 },
+    settings: { muted: false, hints: true, music: 0.7, reduceMotion: false, vibration: true, keys: copyKeys(DEFAULT_KEYS) },
     stats: { races: 0, wins: 0, kos: 0, busted: 0 },
   };
 }
@@ -42,6 +126,7 @@ export function migrate(raw: unknown): SaveData {
   const fresh = newSave();
   if (!raw || typeof raw !== 'object') return fresh;
   const r = raw as Partial<SaveData>;
+  const prev = (r.settings ?? {}) as { music?: unknown; reduceMotion?: unknown; vibration?: unknown; keys?: unknown };
   const out: SaveData = {
     ...fresh,
     cash: Number.isFinite(r.cash) ? Math.max(0, Math.floor(r.cash as number)) : 0,
@@ -51,7 +136,10 @@ export function migrate(raw: unknown): SaveData {
     settings: {
       ...fresh.settings,
       ...(r.settings ?? {}),
-      music: musicLevel((r.settings as { music?: unknown } | undefined)?.music),
+      music: musicLevel(prev.music),
+      reduceMotion: prev.reduceMotion === true,
+      vibration: prev.vibration !== false,
+      keys: normalizeKeys(prev.keys),
     },
     stats: { ...fresh.stats, ...(r.stats ?? {}) },
     bikes: {},
