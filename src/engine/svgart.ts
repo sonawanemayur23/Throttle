@@ -17,6 +17,19 @@ import desertRock from '../art/desert-rock.svg?raw';
 import desertWindmill from '../art/desert-windmill.svg?raw';
 import desertSign from '../art/desert-sign.svg?raw';
 import desertBush from '../art/desert-bush.svg?raw';
+import mountainPineShort from '../art/mountain-pine-short.svg?raw';
+import mountainPineDead from '../art/mountain-pine-dead.svg?raw';
+import mountainBoulder from '../art/mountain-boulder.svg?raw';
+import mountainLogs from '../art/mountain-logs.svg?raw';
+import mountainSign from '../art/mountain-sign.svg?raw';
+import mountainRockface from '../art/mountain-rockface.svg?raw';
+import cityTowerA from '../art/city-tower-a.svg?raw';
+import cityTowerB from '../art/city-tower-b.svg?raw';
+import cityTowerC from '../art/city-tower-c.svg?raw';
+import cityShopfront from '../art/city-shopfront.svg?raw';
+import cityLamp from '../art/city-lamp.svg?raw';
+import cityTrafficlight from '../art/city-trafficlight.svg?raw';
+import cityBusstop from '../art/city-busstop.svg?raw';
 import coastPalm from '../art/coast-palm-tall.svg?raw';
 import coastRock from '../art/coast-rock.svg?raw';
 import mountainPine from '../art/mountain-pine-tall.svg?raw';
@@ -132,6 +145,19 @@ export const ART = {
   ]),
   'desert-bush': def(desertBush, 1),
   'mountain-pine-tall': def(mountainPine, 1),
+  'mountain-pine-short': def(mountainPineShort, 1),
+  'mountain-pine-dead': def(mountainPineDead, 1),
+  'mountain-boulder': def(mountainBoulder, 1),
+  'mountain-logs': def(mountainLogs, 1),
+  'mountain-sign': def(mountainSign, 1),
+  'mountain-rockface': def(mountainRockface, 1),
+  'city-tower-a': def(cityTowerA, 1),
+  'city-tower-b': def(cityTowerB, 1),
+  'city-tower-c': def(cityTowerC, 1),
+  'city-shopfront': def(cityShopfront, 1, [{ x: 96, y: 107, w: 288, h: 32 }]),
+  'city-lamp': def(cityLamp, 1),
+  'city-trafficlight': def(cityTrafficlight, 1),
+  'city-busstop': def(cityBusstop, 1),
   'rider-ride': def(riderRide, RIDER_FIT),
   'rider-punch': def(riderPunch, RIDER_FIT),
   'rider-kick': def(riderKick, RIDER_FIT),

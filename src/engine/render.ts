@@ -37,7 +37,8 @@ const RIDER_POSES = NAMES.filter((n) => n.startsWith('rider-'));
 const POLICE_POSES = NAMES.filter((n) => n.startsWith('police-'));
 const CARS = NAMES.filter((n) => n.startsWith('car-'));
 
-type SceneryArt = Partial<Record<Sprite['kind'], ArtName>>;
+/** One drawing, or several picked by the sprite's variant. */
+type SceneryArt = Partial<Record<Sprite['kind'], ArtName | ArtName[]>>;
 /** Scenery drawn from SVG art, per track, instead of the cached code-drawn stamps. */
 const SVG_SCENERY: Record<string, SceneryArt> = {
   coast: {
@@ -56,8 +57,40 @@ const SVG_SCENERY: Record<string, SceneryArt> = {
     windmill: 'desert-windmill',
     sign: 'desert-sign',
   },
-  mountain: { pine: 'mountain-pine-tall', rock: 'coast-rock' },
-  city: { palm: 'coast-palm-tall', rock: 'coast-rock' },
+  mountain: {
+    pine: ['mountain-pine-tall', 'mountain-pine-short'],
+    deadpine: 'mountain-pine-dead',
+    rock: 'mountain-boulder',
+    logs: 'mountain-logs',
+    cliff: 'mountain-rockface',
+    sign: 'mountain-sign',
+  },
+  city: {
+    building: ['city-tower-a', 'city-tower-b', 'city-tower-c'],
+    shop: 'city-shopfront',
+    lamp: 'city-lamp',
+    trafficlight: 'city-trafficlight',
+    busstop: 'city-busstop',
+  },
+};
+/**
+ * How a prop is placed. `ax`: the ground point's x in the art's viewBox when it
+ * is not the center (a pole at one side). `mirror`: 'never' for anything with
+ * a fixed direction or words, 'road' to turn arms over the road; otherwise half
+ * are mirrored at random.
+ */
+const PROP_PLACE: Partial<Record<ArtName, { ax?: number; mirror?: 'never' | 'road' }>> = {
+  'city-lamp': { ax: 38, mirror: 'road' },
+  'city-trafficlight': { ax: 38, mirror: 'road' },
+  'mountain-sign': { mirror: 'never' },
+};
+/** Lamp heads that glow at night: center and radius in viewBox units. */
+const PROP_GLOW: Partial<Record<ArtName, [number, number, number]>> = {
+  'city-lamp': [175, 58, 70],
+};
+/** Ink for sign words when not the outline color, for neon on dark panels. */
+const SIGN_INK: Partial<Record<ArtName, string>> = {
+  'city-shopfront': '#FF6FB5',
 };
 /** Words printed on sign panels, one set per panel, picked by the sprite's variant. */
 const SIGN_WORDS: Partial<Record<ArtName, string[][]>> = {
@@ -66,6 +99,7 @@ const SIGN_WORDS: Partial<Record<ArtName, string[][]>> = {
     ['FUEL', 'EATS', 'MOTEL', 'GAS', 'CAFE', 'TOW'],
     ['OPEN 24/7', 'LAST STOP', '12 MI', 'COLD BEER', 'VACANCY', 'NEXT EXIT'],
   ],
+  'city-shopfront': [['PIZZA', 'NOODLES', 'ARCADE', 'DINER', 'RECORDS', 'KARAOKE', 'OPEN 24 HR', 'LAUNDRY', 'BURGERS']],
 };
 const OUTLINE = '#14101F';
 const PLAYER_JACKET = '#2b2f3a';
@@ -126,6 +160,12 @@ const SPRITE_W: Record<Sprite['kind'], number> = {
   pine: 760,
   building: 1500,
   lamp: 110,
+  deadpine: 500,
+  logs: 900,
+  cliff: 1400,
+  shop: 1300,
+  trafficlight: 120,
+  busstop: 1100,
 };
 
 interface Particle {
@@ -565,22 +605,35 @@ export class Renderer {
 
   private drawSprite(sp: Sprite, x: number, y: number, w: number) {
     const ctx = this.ctx;
-    const art = SVG_SCENERY[this.def?.id ?? '']?.[sp.kind];
+    const pick = SVG_SCENERY[this.def?.id ?? '']?.[sp.kind];
+    const art = Array.isArray(pick) ? pick[Math.floor(sp.variant * pick.length * 7) % pick.length] : pick;
     if (art) {
+      const a = ART[art];
       // Props share one scale (art px to world units), so the sheet's sizes hold.
-      const dw = ART[art].vw * PROP_SCALE * (w / SPRITE_W[sp.kind]);
+      const dw = a.vw * PROP_SCALE * (w / SPRITE_W[sp.kind]);
+      const k = dw / a.vw;
+      const place = PROP_PLACE[art];
       const words = SIGN_WORDS[art];
-      if (words) {
-        if (svgArt.drawAt(ctx, art, x, y, dw)) return this.signText(art, words, x, y, dw, sp.variant);
-      } else if (sp.variant < 0.5) {
-        // Mirror half the props so a row of the same drawing does not look stamped.
+      const shift = place?.ax === undefined ? 0 : (a.vw / 2 - place.ax) * k;
+      const flip = words || place?.mirror === 'never' ? false : place?.mirror === 'road' ? sp.offset > 0 : sp.variant < 0.5;
+      let ok: boolean;
+      if (flip) {
+        // Mirror around the ground point, so a pole stays where it stands.
         ctx.save();
         ctx.translate(x, 0);
         ctx.scale(-1, 1);
-        const ok = svgArt.drawAt(ctx, art, 0, y, dw);
+        ok = svgArt.drawAt(ctx, art, shift, y, dw);
         ctx.restore();
-        if (ok) return;
-      } else if (svgArt.drawAt(ctx, art, x, y, dw)) return;
+      } else ok = svgArt.drawAt(ctx, art, x + shift, y, dw);
+      if (ok) {
+        if (words) this.signText(art, words, x + shift, y, dw, sp.variant);
+        const g = PROP_GLOW[art];
+        if (g && this.night) {
+          const cx = x + (flip ? -1 : 1) * ((g[0] - a.vw / 2) * k + shift);
+          this.propGlow(cx, y - (a.vh - g[1]) * k, g[2] * k);
+        }
+        return;
+      }
     }
     const stamp = this.cache.get(sp.kind, sp.variant);
     if (stamp) {
@@ -616,6 +669,20 @@ export class Renderer {
     }
   }
 
+  /** Warm additive glow around a lamp head. */
+  private propGlow(cx: number, cy: number, r: number) {
+    if (r < 2) return;
+    const ctx = this.ctx;
+    const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grad.addColorStop(0, 'rgba(255,215,140,0.55)');
+    grad.addColorStop(1, 'rgba(255,215,140,0)');
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = grad;
+    ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    ctx.restore();
+  }
+
   /** Print the sign's words over its blank panels. Signs are never mirrored. */
   private signText(art: ArtName, words: string[][], x: number, y: number, dw: number, variant: number) {
     const a = ART[art];
@@ -640,7 +707,7 @@ export class Renderer {
       }
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillStyle = OUTLINE;
+      ctx.fillStyle = SIGN_INK[art] ?? OUTLINE;
       ctx.fillText(text, left + (p.x + p.w / 2) * k, top + (p.y + p.h / 2) * k + size * 0.04);
     });
   }
