@@ -101,7 +101,8 @@ Goal: give players a reason to come back tomorrow.
 - [x] Career mode: 5 levels, harder rivals each level
 - [x] Gamepad support, PWA install
 - [x] Guest save in the browser with save codes. Sign in and sync moved to Phase 3, which brings the backend (decision D5)
-- [ ] Analytics, phone performance checks, comfort settings, balance (tasks P2-12, P2-13, P2-15, P2-16, P2-18). Music is done (P2-17). Deploy workflow is in (P2-14); the site goes live when Pages source is GitHub Actions.
+- [x] Hosted build on Vercel (P2-14). GitHub Pages was dropped because Actions could not run (decision D13).
+- [ ] Analytics, phone performance checks, comfort settings, balance (tasks P2-12, P2-13, P2-15, P2-16, P2-18). Music is done (P2-17).
 
 **Gate to Phase 3:** day 1 retention at 35 percent or more, average 8 races per player per day.
 

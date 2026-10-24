@@ -53,3 +53,7 @@ Mayur was not happy with code-drawn sprites (P2-22). Art now comes from Claude D
 ## D12. Original music, synthesized (Oct 2026)
 
 Menu and race music are loops written for this game and played with Web Audio oscillators. No recordings and no melodies from other games, so there is nothing to license (D3, D6). Menus share one loop. Each highway has its own. The race loop ducks under the engine. A music slider in the save lets a player turn the music off without muting the bike.
+
+## D13. Host the game on Vercel, not GitHub Pages (Oct 2026)
+
+P2-14 added a GitHub Pages workflow. Pages never published: the GitHub account is locked for a billing problem, so Actions jobs do not start. Mayur deployed the Vite build to Vercel instead, and that link works. The Pages workflow is removed so a locked Actions account is not on the release path. Pull request checks in `.github/workflows/ci.yml` stay. `base: './'` still lets the build run under any host path.

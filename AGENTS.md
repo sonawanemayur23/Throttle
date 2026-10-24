@@ -74,4 +74,4 @@ Player-facing text is plain, short and specific. No contractions, no long dashes
 
 ## Commit style
 
-Imperative subject under 70 characters, task ID first when there is one: `P2-14 Deploy to GitHub Pages`. Body says what changed and why.
+Imperative subject under 70 characters, task ID first when there is one: `P2-16 Add comfort settings`. Body says what changed and why.
