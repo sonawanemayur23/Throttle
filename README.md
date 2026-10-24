@@ -4,6 +4,12 @@ Browser motorbike combat racer. Race on open highways, punch and kick rivals off
 
 Working codename. The final name is not decided yet.
 
+## Play
+
+https://sonawanemayur23.github.io/Throttle/
+
+The link works on a phone. Add it to the home screen from the browser menu. After the first visit it keeps working offline.
+
 - Plan: [docs/PLAN.md](docs/PLAN.md)
 - Current phase: **Phase 2, full single player game** (core built, see [docs/TASKS.md](docs/TASKS.md))
 
@@ -57,7 +63,7 @@ Start with [AGENTS.md](AGENTS.md). It has the setup, the rules and the task work
 ## Status
 
 - Phase 1, feel prototype: **done**, playtest gate passed.
-- Phase 2, full single player game: core features done (P2-01 to P2-11). Next: deploy, analytics, phone performance, comfort settings, music, balance.
+- Phase 2, full single player game: core features done (P2-01 to P2-11). The hosted build deploys to GitHub Pages on each push to main (P2-14). Next: analytics, phone performance, comfort settings, music, balance.
 - Phase 3 and 4: drafted in [docs/TASKS.md](docs/TASKS.md).
 
 Size: about 78 KB gzipped including React. 29 tests, including a bot that finishes a race on every track.
