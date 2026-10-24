@@ -56,7 +56,7 @@ Special classes the engine looks for, on `rect` elements: `tail` (tail lights, g
    ```
 
    The script strips editor attributes, sets the size from the viewBox, rejects unsafe elements and swaps colors into keys.
-3. Register it in `ART` in `src/engine/svgart.ts`: import it with `?raw`. Riders and cars take a `fit`, the drawn width as a multiple of the sprite width the renderer passes in. Props ignore `fit`: they all draw at `PROP_SCALE` world units per viewBox pixel, so draw props at their true relative size. Signs list their blank `panels` so the game can print words on them.
+3. Register it in `ART` in `src/engine/svgart.ts`: import it with `?raw`. Riders and cars take a `fit`, the drawn width as a multiple of the sprite width the renderer passes in. Props ignore `fit`: they all draw at `PROP_SCALE` world units per viewBox pixel, so draw props at their true relative size. Signs list their blank `panels` so the game can print words on them. Props with a pole at one side set `ax` (ground point) and `mirror` in `PROP_PLACE` in `src/engine/render.ts`.
 4. Use it: for scenery, map the scenery kind per track in `SVG_SCENERY` in `src/engine/render.ts` (sign words live in `SIGN_WORDS`); for cars and riders, call `svgArt.draw()` in `src/engine/sprites.ts`.
 5. Run `npm run check`, then compare a race before and after with `npm run build:single`.
 
@@ -77,10 +77,11 @@ Until an image has loaded, `draw` returns false and the old code-drawn sprite is
 | Traffic: sedan, hatchback, SUV, van, pickup, semi | Prompt 3 | All traffic, repainted per car (semi keeps its colors) |
 | Coast props: palms, shrub, rock, lifeguard tower, billboard | Prompt 4 | Coast; billboards carry game-printed words |
 | Desert props: cacti, rock, bush, windmill, roadside sign | Prompt 4 | Desert; signs carry game-printed words |
-| Pine | Board | Mountain |
+| Mountain props: tall, short and dead pines, boulder, log pile, rock face with waterfall, curve sign | Prompt 5 | Mountain |
+| City props: 3 towers, shopfront, street lamp, traffic light, bus stop | Prompt 5 | City; shop signs carry neon words, lamps glow at night |
 | Sky bands, sun, moon, ridges | Code, matched to the board | All tracks |
 | Riders, 10 poses | Prompt 2 | All riders, repainted per rider |
 | Police, 3 poses | Prompt 3 | Police chases, light bar flashes |
-| Mountain and city props, horizons | Prompts 5 and 6 | Not yet; code-drawn |
+| Horizons | Prompt 6 | Not yet; code-drawn |
 | Garage bikes and parts | Prompt 7 | Not yet; code-drawn SVG |
 | Icons, title art | Prompt 8 | Not yet |
