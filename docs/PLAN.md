@@ -102,7 +102,15 @@ Goal: give players a reason to come back tomorrow.
 - [x] Gamepad support, PWA install
 - [x] Guest save in the browser with save codes. Sign in and sync moved to Phase 3, which brings the backend (decision D5)
 - [x] Hosted build on Vercel (P2-14). GitHub Pages was dropped because Actions could not run (decision D13).
-- [ ] Analytics on Umami (P2-13, production only; dashboard still needs a hosted race), phone performance checks, balance (P2-12, P2-15, P2-18). Comfort settings are done (P2-16). Music is done (P2-17).
+- [x] Comfort settings (P2-16) and original music (P2-17)
+- [x] New menus and garage with bike and part pictures (P2-21)
+- [x] Game art from Claude Design, cel-shaded 90s arcade poster look: riders, police, traffic, roadside props on all 4 tracks, horizons, sun and moon, garage bikes and parts (P2-23 to P2-27, see docs/ART.md)
+- [ ] Analytics on Umami (P2-13, production only; dashboard still needs a hosted race)
+- [ ] Phone performance checks, auto quality, balance (P2-12, P2-15, P2-18)
+- [ ] Icons and title art from Prompt 8 (rest of P2-27)
+- [ ] Name and domain (P2-19, Mayur)
+
+Where we are (25 Oct 2026): Phase 2 features and nearly all art are in, and the game is hosted. What blocks the Phase 3 gate is data: Umami needs a week of real players to show day 1 retention and races per day. The next agent should start from the "Next up" list in docs/TASKS.md.
 
 **Gate to Phase 3:** day 1 retention at 35 percent or more, average 8 races per player per day.
 
