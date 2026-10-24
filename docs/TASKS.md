@@ -40,7 +40,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-24 | Riders from Prompt 2 art | done | Claude | P2-23 |
 | P2-25 | Police and traffic from Prompt 3 art | done | Claude | P2-24 |
 | P2-26 | Props and horizons from Prompts 4 to 6: coast, desert, mountain and city props, 12 horizon strips, sun and moon art | done | Claude | P2-23, art from Mayur |
-| P2-27 | Garage art and icons from Prompts 7 and 8 | blocked | Claude | P2-23, art from Mayur |
+| P2-27 | Garage art and icons from Prompts 7 and 8. Garage bikes and parts (Prompt 7) done; icons and title art (Prompt 8) wait on art | in progress | Claude | P2-23, art from Mayur |
 
 ### P2-12. Measure on low end phones
 

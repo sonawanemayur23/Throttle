@@ -4,6 +4,19 @@ import { ART, repaint } from '../engine/svgart';
 
 const sources = import.meta.glob('../art/*.svg', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
 const files = Object.keys(sources).map((p) => p.split('/').pop() as string);
+// Garage art is drawn by the menus, not the race engine, so it is not in ART.
+const garage = import.meta.glob('../art/garage/*.svg', { query: '?raw', import: 'default', eager: true }) as Record<string, string>;
+
+function checkSafe(svg: string) {
+  expect(svg).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="\d+" height="\d+" viewBox="0 0 \d+ \d+">/);
+  const [, w, h, vw, vh] = svg.match(/width="(\d+)" height="(\d+)" viewBox="0 0 (\d+) (\d+)"/) ?? [];
+  expect(w).toBe(vw);
+  expect(h).toBe(vh);
+  expect(svg).not.toMatch(/<(script|image|foreignObject|filter|text|iframe|a)\b/i);
+  expect(svg).not.toMatch(/\sdata-[\w-]+=/);
+  expect(svg).not.toMatch(/\sstyle=/);
+  expect(svg.length).toBeLessThan(40_000);
+}
 
 describe('art files', () => {
   it('there is art to check', () => {
@@ -12,19 +25,17 @@ describe('art files', () => {
 
   for (const f of files) {
     const svg = sources[`../art/${f}`];
-    it(`${f}: safe, sized and cleaned`, () => {
-      expect(svg).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" width="\d+" height="\d+" viewBox="0 0 \d+ \d+">/);
-      const [, w, h, vw, vh] = svg.match(/width="(\d+)" height="(\d+)" viewBox="0 0 (\d+) (\d+)"/) ?? [];
-      expect(w).toBe(vw);
-      expect(h).toBe(vh);
-      expect(svg).not.toMatch(/<(script|image|foreignObject|filter|text|iframe|a)\b/i);
-      expect(svg).not.toMatch(/\sdata-[\w-]+=/);
-      expect(svg).not.toMatch(/\sstyle=/);
-      expect(svg.length).toBeLessThan(40_000);
-    });
+    it(`${f}: safe, sized and cleaned`, () => checkSafe(svg));
     it(`${f}: registered in ART`, () => {
       expect(Object.keys(ART)).toContain(f.replace(/\.svg$/, ''));
     });
+  }
+
+  it('garage has 5 bikes and 9 parts', () => {
+    expect(Object.keys(garage).length).toBe(14);
+  });
+  for (const [p, svg] of Object.entries(garage)) {
+    it(`garage/${p.split('/').pop()}: safe, sized and cleaned`, () => checkSafe(svg));
   }
 });
 

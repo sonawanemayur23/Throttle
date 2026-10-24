@@ -85,5 +85,5 @@ Until an image has loaded, `draw` returns false and the old code-drawn sprite is
 | Horizons: far, mid and near strip per track; sunset, noon and morning suns, moon | Prompt 6 | All tracks; strips tile sideways with parallax |
 | Riders, 10 poses | Prompt 2 | All riders, repainted per rider |
 | Police, 3 poses | Prompt 3 | Police chases, light bar flashes |
-| Garage bikes and parts | Prompt 7 | Not yet; code-drawn SVG |
+| Garage bikes (5 liveries) and parts (3 levels each) | Prompt 7 | Garage, title and career screens; files in `src/art/garage/`, loaded by `src/ui/art/garageArt.ts` |
 | Icons, title art | Prompt 8 | Not yet |
