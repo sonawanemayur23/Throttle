@@ -40,6 +40,8 @@ Assets that come in many colors are painted once in key colors. The engine swaps
 
 Use these exact values and nowhere else in the drawing.
 
+Rider poses and the state that shows them, in order of priority: `rider-crash-a` and `rider-crash-b` (down, early and late), `rider-kick`, `rider-punch`, `rider-club-swing` or `rider-chain-swing`, `rider-hurt` (just hit), `rider-club-hold` or `rider-chain-hold`, `rider-ride`. Poses face right and are mirrored when the action is on the left. Mapping lives in `riderPose()` in `src/engine/sprites.ts`.
+
 Special classes the engine looks for: `tail` (tail lights), `light-a` and `light-b` (police light bar halves, flashed in turn).
 
 ## Adding art
@@ -75,7 +77,8 @@ Until an image has loaded, `draw` returns false and the old code-drawn sprite is
 | Car (sedan) | Board, Prompt 1 | All traffic, repainted per car |
 | Palm, pine, rock | Board, Prompt 1 | Scenery on all tracks |
 | Sky bands, sun, moon, ridges | Code, matched to the board | All tracks |
-| Riders, police | Prompts 2 and 3 | Not yet; code-drawn |
+| Riders, 10 poses | Prompt 2 | All riders, repainted per rider |
+| Police | Prompt 3 | Not yet; code-drawn |
 | Other props, horizons | Prompts 4 to 6 | Not yet; code-drawn |
 | Garage bikes and parts | Prompt 7 | Not yet; code-drawn SVG |
 | Icons, title art | Prompt 8 | Not yet |

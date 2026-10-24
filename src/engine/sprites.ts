@@ -1,7 +1,7 @@
 // Procedural sprites. Every function draws with its origin at bottom center,
 // in a box `w` pixels wide. No image files: the whole game stays tiny.
 
-import { svgArt } from './svgart';
+import { svgArt, type ArtName } from './svgart';
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -70,8 +70,46 @@ function shadow(ctx: Ctx, rx: number, ry: number) {
   ctx.restore();
 }
 
+/** Which drawn pose shows a rider's state, and whether to mirror it. */
+function riderPose(o: RiderLook): { pose: ArtName; flip: boolean } {
+  const left = o.side < 0;
+  if (o.down) return { pose: o.tumble < 2.6 ? 'rider-crash-a' : 'rider-crash-b', flip: left };
+  if (o.kick > 0) return { pose: 'rider-kick', flip: left };
+  if (o.punch > 0) return { pose: 'rider-punch', flip: left };
+  if (o.weapon && (o.swing ?? 0) > 0) return { pose: o.weapon === 'club' ? 'rider-club-swing' : 'rider-chain-swing', flip: left };
+  if (o.flash > 0.4) return { pose: 'rider-hurt', flip: false };
+  if (o.weapon) return { pose: o.weapon === 'club' ? 'rider-club-hold' : 'rider-chain-hold', flip: left };
+  return { pose: 'rider-ride', flip: false };
+}
+
+/** Draw a rider from SVG art. Returns false while the art is still loading. */
+function drawRiderArt(ctx: Ctx, cx: number, by: number, w: number, o: RiderLook) {
+  const { pose, flip } = riderPose(o);
+  const paint = { body: o.bike, jacket: o.jacket, helmet: o.helmet };
+  ctx.save();
+  ctx.translate(cx, by);
+  shadow(ctx, w * 0.5, w * 0.1);
+  if (!o.down) ctx.rotate(o.lean);
+  if (flip) ctx.scale(-1, 1);
+  const ok = svgArt.draw(ctx, pose, 0, 0, w, paint);
+  if (ok && o.night && !o.down) {
+    // Tail light glow, placed on the art's tail light (x 200, y 267 of 400).
+    const k = (w * 1.45) / 400;
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(0, -133 * k, 0, 0, -133 * k, 70 * k);
+    g.addColorStop(0, 'rgba(255,50,40,0.6)');
+    g.addColorStop(1, 'rgba(255,50,40,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(-70 * k, -203 * k, 140 * k, 140 * k);
+  }
+  ctx.restore();
+  return ok;
+}
+
 export function drawRider(ctx: Ctx, cx: number, by: number, w: number, o: RiderLook) {
   if (w < 1.5) return;
+  // Police keep the code-drawn rider until their art arrives (Prompt 3).
+  if (!o.cop && drawRiderArt(ctx, cx, by, w, o)) return;
   ctx.save();
   ctx.translate(cx, by);
   shadow(ctx, w * 0.5, w * 0.1);
