@@ -362,33 +362,4 @@ export class SpriteCache {
   prewarm(kinds: SpriteKind[]) {
     for (const k of kinds) for (let b = 0; b < VARIANTS; b++) this.get(k, (b + 0.5) / VARIANTS);
   }
-
-  /** Long, flat cloud bands tinted to the sky. `tint` is an "r,g,b" string. */
-  cloud(i: number, tint = '255,255,255'): HTMLCanvasElement {
-    const key = `cloud:${i}:${tint}`;
-    const hit = this.stamps.get(key);
-    if (hit) return hit.img;
-    const img = makeCanvas(480, 90);
-    const ctx = img.getContext('2d');
-    if (ctx) {
-      const r = rand((i + 1) / 7);
-      // Squash round puffs into long bands, brighter on top.
-      ctx.scale(1, 0.45);
-      for (let k = 0; k < 14; k++) {
-        const x = 50 + r() * 380;
-        const y = 120 - Math.sin(((x - 50) / 380) * Math.PI) * 40 + r() * 20;
-        const rad = 22 + r() * 34;
-        const g = ctx.createRadialGradient(x, y - rad * 0.4, rad * 0.1, x, y, rad);
-        g.addColorStop(0, `rgba(${tint},0.9)`);
-        g.addColorStop(0.55, `rgba(${tint},0.45)`);
-        g.addColorStop(1, `rgba(${tint},0)`);
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(x, y, rad, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-    this.stamps.set(key, { img, unit: 480 });
-    return img;
-  }
 }

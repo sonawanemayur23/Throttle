@@ -36,6 +36,11 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-20 | Art direction pass | parked | | P2-19 |
 | P2-21 | Garage art and menu redesign | done | Claude | |
 | P2-22 | In-race graphics overhaul | done | Claude | P2-21 |
+| P2-23 | SVG art pipeline and board look | done | Claude | P2-22 |
+| P2-24 | Riders from Prompt 2 art | blocked | Claude | P2-23, art from Mayur |
+| P2-25 | Police and traffic from Prompt 3 art | blocked | Claude | P2-23, art from Mayur |
+| P2-26 | Props and horizons from Prompts 4 to 6 | blocked | Claude | P2-23, art from Mayur |
+| P2-27 | Garage art and icons from Prompts 7 and 8 | blocked | Claude | P2-23, art from Mayur |
 
 ### P2-12. Measure on low end phones
 
@@ -104,6 +109,13 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 **Do:** richer road, sky, scenery, riders and cars, lighting and effects, within the frame budget in AGENTS.md.
 **Done when:** before and after screenshots of all 4 tracks are in the pull request, and render time per frame stays under 12 ms in a desktop browser without a GPU.
 
+### P2-23 to P2-27. Game art from Claude Design
+
+**Why:** Mayur's review: the code-drawn graphics are not good enough. Mayur makes the art in Claude Design from 8 prompts; agents wire it in.
+**Prompts:** "Throttle Art Prompts" doc, https://claude.ai/artifact/T4yS78je4LWzZGi9MSAjz4
+**Spec:** [ART.md](ART.md). Format, color keys, anchors and the import steps.
+**Done when (each art task):** every asset passes `src/test/art.test.ts`, is drawn in game with its fallback still in place, and the pull request shows all 4 tracks before and after on desktop and phone.
+
 ## Phase 3: Social and viral loop
 
 Goal: every player brings in at least one more. Gate: viral coefficient 0.5 or more, 1,000 daily players. Tasks are drafted; refine each before you start.
@@ -139,6 +151,7 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 
 ## Notes
 
+- P2-23, Oct 2026: SVG art pipeline (repaint by color keys, rasterize once per size bucket, stamp with fallback), clean-svg import script, art tests, board car, palm, pine and rock in game, flat banded sky, striped sun, flat moon, outlined ridges.
 - P2-22, Oct 2026: cached high-detail scenery, shaded riders and cars with glowing lights, tyre tracks, edge lines, kerb shoulders, tinted clouds, ridge gradients, horizon haze, night headlight and road studs, additive sparks, vignette, HUD plates. Steady render 6 to 12 ms on desktop without a GPU. Fixed: the player's bike color was always black in races.
 - P2-21, Oct 2026: SVG art for 5 bikes and 3 parts, new menu design (Saira type, angled panels), engine-rendered track previews.
 - P2-01 to P2-11, Oct 2026: done in one pass. Engine takes a `RaceSetup`; content is data; save is versioned; React menus over a canvas loop; 29 tests including a bot race on every track; CI on push.

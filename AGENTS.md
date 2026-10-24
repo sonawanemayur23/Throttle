@@ -10,6 +10,7 @@ A browser motorbike combat racer. Race on highways, punch and kick rivals off th
 - Task board with IDs, status and acceptance criteria: [docs/TASKS.md](docs/TASKS.md)
 - How the code fits together: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Decisions and why: [docs/DECISIONS.md](docs/DECISIONS.md)
+- Art spec and import steps: [docs/ART.md](docs/ART.md)
 - How we test with players: [docs/PLAYTEST.md](docs/PLAYTEST.md)
 
 ## Setup
@@ -58,7 +59,7 @@ If a task is unclear or too big, split it in TASKS.md into smaller tasks with ne
 
 **Performance budget.** 60 fps on a 3 year old Android phone. Simulation under 1 ms per frame, render under 8 ms. Playtest build under 3 MB. No per-frame allocations in hot loops (`render`, `update`).
 
-**No outside assets yet.** Art and sound are drawn and synthesized in code. Do not add image, audio or font files without a decision in DECISIONS.md.
+**Art comes from `src/art/`.** Game art is SVG made to the spec in [docs/ART.md](docs/ART.md); import it with `scripts/clean-svg.mjs`. Do not add raster images, audio or font files without a decision in DECISIONS.md. Sound is synthesized in code.
 
 **Original content only.** No names, art, music, tracks or characters from Road Rash or any other game. No real brand or bike model names.
 

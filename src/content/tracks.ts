@@ -5,7 +5,7 @@ export type SceneryKind = 'palm' | 'rock' | 'sign' | 'bush' | 'cactus' | 'pine' 
 
 export interface Palette {
   sky: [string, string, string, string]; // top to horizon
-  sun: 'sun' | 'pale' | 'moon';
+  sun: 'sun' | 'noon' | 'pale' | 'moon';
   ridges: [string, string, string]; // far to near
   skyline?: boolean; // draw city blocks instead of hills
   fog: string;
@@ -70,7 +70,7 @@ export const TRACKS: TrackDef[] = [
     traffic: 0.8,
     palette: {
       sky: ['#2d5d9f', '#6fa3d1', '#f0d6a2', '#f7e3b8'],
-      sun: 'sun',
+      sun: 'noon',
       ridges: ['#a8643f', '#c27a4c', '#d99662'],
       fog: '#f2dcae',
       ground: ['#e2c08a', '#d8b47c'],
