@@ -32,6 +32,7 @@ Node 22. No other services needed.
 - Every feature, fix or doc change gets its own branch from the latest `main`.
 - Branch names: `p2-14-pages-deploy` for a task, `fix/short-description` for a bug, `chore/short-description` for tooling and docs.
 - One task per branch and per pull request. Keep pull requests small enough to review in 10 minutes.
+- Every pull request targets `main`. Do not stack pull requests on other branches: merging a stacked PR puts the change on the side branch, not on `main`. If your work needs an unmerged branch, wait for it to merge first.
 - Open the pull request against `main` with the template filled in, then stop. Do not merge it yourself, even when checks pass.
 - If Mayur asks for changes, push more commits to the same branch.
 - Before starting new work, update from `main`: `git fetch origin main && git switch -c <branch> origin/main`.
