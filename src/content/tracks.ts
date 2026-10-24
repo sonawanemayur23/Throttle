@@ -1,7 +1,7 @@
 // The four highways. Each one is generated from a seed plus a few shape knobs,
 // so the same track comes out the same on every device.
 
-export type SceneryKind = 'palm' | 'rock' | 'sign' | 'bush' | 'cactus' | 'pine' | 'building' | 'lamp';
+export type SceneryKind = 'palm' | 'palm2' | 'rock' | 'sign' | 'bush' | 'tower' | 'cactus' | 'cactus2' | 'windmill' | 'pine' | 'building' | 'lamp';
 
 export interface Palette {
   sky: [string, string, string, string]; // top to horizon
@@ -53,10 +53,12 @@ export const TRACKS: TrackDef[] = [
       lane: '#eeeeee',
     },
     scenery: [
-      ['palm', 45, 1.3, 2.9],
-      ['bush', 17, 1.2, 3.2],
-      ['rock', 13, 1.4, 3.6],
-      ['sign', 5, 1.35, 1.35],
+      ['palm', 30, 1.35, 2.9],
+      ['palm2', 10, 1.5, 3.2],
+      ['bush', 15, 1.25, 3.2],
+      ['rock', 12, 1.45, 3.6],
+      ['tower', 3, 1.7, 2.4],
+      ['sign', 4, 2.1, 2.3],
     ],
   },
   {
@@ -79,10 +81,12 @@ export const TRACKS: TrackDef[] = [
       lane: '#f4f1e8',
     },
     scenery: [
-      ['cactus', 40, 1.3, 3.4],
-      ['rock', 30, 1.4, 4],
-      ['bush', 10, 1.3, 3],
-      ['sign', 6, 1.35, 1.35],
+      ['cactus', 28, 1.3, 3.4],
+      ['cactus2', 16, 1.25, 3],
+      ['rock', 22, 1.5, 4],
+      ['bush', 12, 1.25, 3],
+      ['windmill', 3, 1.8, 3],
+      ['sign', 5, 1.6, 1.75],
     ],
   },
   {

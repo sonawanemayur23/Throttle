@@ -7,6 +7,16 @@
 // code-drawn fallback, so the game never waits on art.
 
 import carSedan from '../art/car-sedan.svg?raw';
+import coastPalmPair from '../art/coast-palm-pair.svg?raw';
+import coastShrub from '../art/coast-shrub.svg?raw';
+import coastTower from '../art/coast-tower.svg?raw';
+import coastBillboard from '../art/coast-billboard.svg?raw';
+import desertCactusTall from '../art/desert-cactus-tall.svg?raw';
+import desertCactusSmall from '../art/desert-cactus-small.svg?raw';
+import desertRock from '../art/desert-rock.svg?raw';
+import desertWindmill from '../art/desert-windmill.svg?raw';
+import desertSign from '../art/desert-sign.svg?raw';
+import desertBush from '../art/desert-bush.svg?raw';
 import coastPalm from '../art/coast-palm-tall.svg?raw';
 import coastRock from '../art/coast-rock.svg?raw';
 import mountainPine from '../art/mountain-pine-tall.svg?raw';
@@ -49,6 +59,8 @@ export interface ArtDef {
   fit: number;
   /** Light rectangles by class, in viewBox units, for glows. */
   lights: Record<LightClass, Rect[]>;
+  /** Blank sign panels the game prints words on, in viewBox units. */
+  panels?: Rect[];
 }
 
 /** Find the main rect of each light class. Highlight strips inside are skipped. */
@@ -68,11 +80,18 @@ function findLights(svg: string): Record<LightClass, Rect[]> {
   return out;
 }
 
-function def(svg: string, fit: number): ArtDef {
+function def(svg: string, fit: number, panels?: Rect[]): ArtDef {
   const m = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/);
   if (!m) throw new Error('Art is missing a viewBox');
-  return { svg, vw: Number(m[1]), vh: Number(m[2]), fit, lights: findLights(svg) };
+  return { svg, vw: Number(m[1]), vh: Number(m[2]), fit, lights: findLights(svg), panels };
 }
+
+/**
+ * Props are drawn to one shared scale, so their relative sizes stay as the
+ * artist drew them: world units per viewBox pixel. A 300 px palm is about
+ * 1,190 world units wide, a 2,000 unit road half width is 4 palms across.
+ */
+export const PROP_SCALE = 3.97;
 
 /**
  * Riders: the bike tail spans 160 of the 400 px box. The code-drawn rider's
@@ -95,9 +114,24 @@ export const ART = {
   'police-ride': def(policeRide, RIDER_FIT),
   'police-baton-swing': def(policeBatonSwing, RIDER_FIT),
   'police-crash': def(policeCrash, RIDER_FIT),
-  'coast-palm-tall': def(coastPalm, 1.7),
-  'mountain-pine-tall': def(mountainPine, 1.2),
-  'coast-rock': def(coastRock, 1.05),
+  // Props: `fit` is unused; they draw at PROP_SCALE.
+  'coast-palm-tall': def(coastPalm, 1),
+  'coast-palm-pair': def(coastPalmPair, 1),
+  'coast-shrub': def(coastShrub, 1),
+  'coast-rock': def(coastRock, 1),
+  'coast-tower': def(coastTower, 1),
+  'coast-billboard': def(coastBillboard, 1, [{ x: 44, y: 54, w: 552, h: 204 }]),
+  'desert-cactus-tall': def(desertCactusTall, 1),
+  'desert-cactus-small': def(desertCactusSmall, 1),
+  'desert-rock': def(desertRock, 1),
+  'desert-windmill': def(desertWindmill, 1),
+  // Round panel, then the small price board under it.
+  'desert-sign': def(desertSign, 1, [
+    { x: 92, y: 60, w: 176, h: 160 },
+    { x: 100, y: 312, w: 160, h: 52 },
+  ]),
+  'desert-bush': def(desertBush, 1),
+  'mountain-pine-tall': def(mountainPine, 1),
   'rider-ride': def(riderRide, RIDER_FIT),
   'rider-punch': def(riderPunch, RIDER_FIT),
   'rider-kick': def(riderKick, RIDER_FIT),
@@ -194,8 +228,12 @@ export class SvgArt {
    * from the renderer. Returns false if the art is not ready yet.
    */
   draw(ctx: CanvasRenderingContext2D, name: ArtName, x: number, y: number, w: number, paint: Paint = {}) {
+    return this.drawAt(ctx, name, x, y, w * ART[name].fit, paint);
+  }
+
+  /** Draw an asset `dw` pixels wide with its bottom center at (x, y). */
+  drawAt(ctx: CanvasRenderingContext2D, name: ArtName, x: number, y: number, dw: number, paint: Paint = {}) {
     const a = ART[name];
-    const dw = w * a.fit;
     const dh = (dw * a.vh) / a.vw;
     if (dh < 1) return true;
     const c = this.get(name, dh, paint);
