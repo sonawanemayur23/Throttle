@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { track as logPlay } from '../app/analytics';
 import type { GameHost } from '../app/host';
 import { raceSetup } from '../app/setup';
-import { enterGameMode, isTouchDevice } from '../app/gameMode';
+import { enterGameMode, installCardDue, isImmersive, iosBrowser, isTouchDevice, markInstallCard, turnTipDue } from '../app/gameMode';
+import { InstallCard } from './InstallCard';
 import { TRACKS } from '../content/tracks';
 import type { Results } from '../engine/game';
 import { loadSave, recordRace, unlockedLevel, writeSave, type SaveData } from '../save/save';
@@ -32,6 +33,9 @@ export function App({ host }: { host: GameHost }) {
   const [level, setLevel] = useState(() => unlockedLevel(loadSave()));
   const [trackId, setTrackId] = useState(TRACKS[0].id);
   const [last, setLast] = useState<LastRace | null>(null);
+  // iPhone: the Add to Home Screen card, and the turn-sideways tip in a race.
+  const [installCard, setInstallCard] = useState<'first' | 'third' | null>(null);
+  const [turnTip, setTurnTip] = useState(false);
   const saveRef = useRef(save);
   saveRef.current = save;
 
@@ -56,6 +60,8 @@ export function App({ host }: { host: GameHost }) {
       setScreen('race');
       // Game mode: full screen on phones. This runs inside the tap that starts the race.
       if (saveRef.current.settings.gameMode && isTouchDevice()) enterGameMode();
+      // iPhone browser tab: a sideways phone hides most of the browser bars.
+      setTurnTip(turnTipDue());
       host.startRace(raceSetup(saveRef.current, lvl, track));
       logPlay('race_start', { track, level: lvl, bike: saveRef.current.selectedBike });
     },
@@ -116,6 +122,32 @@ export function App({ host }: { host: GameHost }) {
     host.applyComfort(save.settings);
   }, [host, save.settings]);
 
+  // Once per load: count Home Screen launches, so we can see if the install card works.
+  useEffect(() => {
+    logPlay('app_open', { display: isImmersive() ? 'home_screen' : 'browser', ios: iosBrowser() ?? 'no' });
+  }, []);
+
+  // The install card shows on the title or career screen: before the first race, and after the third.
+  useEffect(() => {
+    if (screen !== 'title' && screen !== 'career') return;
+    const due = installCardDue(save.stats.races);
+    if (!due) return;
+    markInstallCard(due);
+    setInstallCard(due);
+    logPlay('install_card', { action: 'shown', when: due, browser: iosBrowser() ?? 'other' });
+  }, [screen, save.stats.races]);
+
+  useEffect(() => {
+    if (!turnTip) return;
+    const t = setTimeout(() => setTurnTip(false), 4500);
+    const off = () => setTurnTip(false);
+    window.addEventListener('orientationchange', off);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('orientationchange', off);
+    };
+  }, [turnTip]);
+
   // Enter, Space or the gamepad A button act on the main button of each screen.
   useEffect(() => {
     host.onConfirm = () => {
@@ -137,6 +169,20 @@ export function App({ host }: { host: GameHost }) {
   return (
     <>
       {screen === 'title' && <Title save={save} go={go} />}
+      {installCard && (
+        <InstallCard
+          onClose={() => {
+            logPlay('install_card', { action: 'closed', when: installCard, browser: iosBrowser() ?? 'other' });
+            setInstallCard(null);
+          }}
+        />
+      )}
+      {screen === 'race' && turnTip && (
+        <div className="turn-tip" role="status">
+          <span className="phone" aria-hidden="true" />
+          Turn your phone sideways for a bigger view
+        </div>
+      )}
       {screen === 'career' && (
         <Career
           save={save}
