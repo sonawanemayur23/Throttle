@@ -1180,3 +1180,10 @@ textarea {
   margin: 0 auto 4px;
   display: block;
 }
+
+.ios-tip {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
