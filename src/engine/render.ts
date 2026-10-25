@@ -103,6 +103,10 @@ const SIGN_WORDS: Partial<Record<ArtName, string[][]>> = {
 };
 /** Horizon strips per track, back to front, named `horizon-<track>-<layer>`. */
 const HORIZON_LAYERS = ['far', 'mid', 'near'];
+/** Horizon slide per unit of curve per second at full speed. */
+const SKY_TURN = 0.025;
+/** Minimap window: how much of the route shows, as a share of the track. */
+const MAP_WINDOW = 0.1;
 /** Strip height as a share of the screen height. */
 const HORIZON_H = 0.36;
 /**
@@ -310,7 +314,8 @@ export class Renderer {
     const playerY = lerp(pSeg.p1.world.y, pSeg.p2.world.y, pPct);
     const speedPct = p.speed / MAX_SPEED;
 
-    this.skyOffset += pSeg.curve * speedPct * dt * 0.0015;
+    // Turns slide the horizon sideways. Units: screen widths for the near strip.
+    this.skyOffset += pSeg.curve * speedPct * dt * SKY_TURN;
     if (this.def !== g.track.def) {
       this.def = g.track.def;
       this.C = roadColors(this.def.palette);
@@ -478,61 +483,89 @@ export class Renderer {
     ctx.textBaseline = 'alphabetic';
   }
 
+  /**
+   * Heading-up minimap: the route around the rider, turned so the rider always
+   * points up. A bend to the right ahead is drawn to the right.
+   */
   private minimap(g: Game, x: number, y: number, size: number) {
     const ctx = this.ctx;
-    const map = g.track.map;
-    const inset = size * 0.1;
-    const s = size - inset * 2;
+    const tr = g.track;
+    const route = tr.route;
+    if (!route.length) return;
     ctx.fillStyle = 'rgba(15,10,35,0.45)';
     ctx.beginPath();
     ctx.roundRect(x, y, size, size, size * 0.12);
     ctx.fill();
-    const px = (p: { x: number; y: number }) => x + inset + p.x * s;
-    const py = (p: { x: number; y: number }) => y + inset + p.y * s;
+
+    const me = tr.routeAt(g.player.d);
+    // Route units per pixel: the window spans MAP_WINDOW of the track's length.
+    const span = route.length * 6 * MAP_WINDOW;
+    const k = size / span;
+    const cx = x + size / 2;
+    const cy = y + size * 0.7;
+    const cos = Math.cos(-me.a);
+    const sin = Math.sin(-me.a);
+    const px = (p: { x: number; y: number }) => cx + ((p.x - me.x) * cos - (p.y - me.y) * sin) * k;
+    const py = (p: { x: number; y: number }) => cy + ((p.x - me.x) * sin + (p.y - me.y) * cos) * k;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, size, size, size * 0.12);
+    ctx.clip();
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-    ctx.lineWidth = Math.max(3, size * 0.06);
-    ctx.beginPath();
-    map.forEach((p, i) => (i ? ctx.lineTo(px(p), py(p)) : ctx.moveTo(px(p), py(p))));
-    ctx.stroke();
-    // Ridden part of the route.
-    const done = Math.floor(Math.min(1, g.player.d / g.L) * (map.length - 1));
+    // Only the stretch near the rider, so loops elsewhere do not cross it.
+    const at = Math.floor(Math.min(1, g.player.d / g.L) * (route.length - 1));
+    const reach = Math.ceil(route.length * MAP_WINDOW);
+    const from = Math.max(0, at - Math.floor(reach * 0.45));
+    const to = Math.min(route.length - 1, at + reach);
+    const path = (a: number, b: number) => {
+      ctx.beginPath();
+      for (let i = a; i <= b; i++) (i === a ? ctx.moveTo(px(route[i]), py(route[i])) : ctx.lineTo(px(route[i]), py(route[i])));
+      ctx.stroke();
+    };
+    ctx.strokeStyle = 'rgba(255,255,255,0.32)';
+    ctx.lineWidth = Math.max(3, size * 0.07);
+    path(at, to);
     ctx.strokeStyle = 'rgba(255,211,77,0.85)';
-    ctx.lineWidth = Math.max(2, size * 0.035);
-    ctx.beginPath();
-    for (let i = 0; i <= done; i++) (i ? ctx.lineTo(px(map[i]), py(map[i])) : ctx.moveTo(px(map[i]), py(map[i])));
-    ctx.stroke();
-    // Finish flag.
-    const end = map[map.length - 1];
-    const fs = Math.max(3, size * 0.045);
-    for (let i = 0; i < 2; i++)
-      for (let j = 0; j < 2; j++) {
-        ctx.fillStyle = (i + j) % 2 ? '#111' : '#fff';
-        ctx.fillRect(px(end) - fs + i * fs, py(end) - fs + j * fs, fs, fs);
+    ctx.lineWidth = Math.max(2, size * 0.045);
+    path(from, at);
+
+    // Finish flag when it is in reach.
+    const end = route[route.length - 1];
+    if (to === route.length - 1) {
+      const fs = Math.max(3, size * 0.05);
+      const fx = px(end);
+      const fy = py(end);
+      for (let i = 0; i < 4; i++) {
+        ctx.fillStyle = (i + (i >> 1)) % 2 ? '#111' : '#fff';
+        ctx.fillRect(fx - fs + (i % 2) * fs, fy - fs + (i >> 1) * fs, fs, fs);
       }
-    // Riders.
+    }
+
     const dot = Math.max(2.5, size * 0.045);
-    for (const r of g.rivals) {
-      const m = g.track.mapAt(r.d);
-      ctx.fillStyle = r.down ? 'rgba(255,255,255,0.4)' : r.color;
+    const blip = (d: number, color: string, r: number) => {
+      const m = tr.routeAt(d);
+      ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.arc(px(m), py(m), dot, 0, Math.PI * 2);
+      ctx.arc(px(m), py(m), r, 0, Math.PI * 2);
       ctx.fill();
-    }
-    if (g.cop.active && !g.cop.down) {
-      const m = g.track.mapAt(g.cop.d);
-      ctx.fillStyle = Math.floor(g.clock * 6) % 2 ? '#ff3b3b' : '#4a7dff';
-      ctx.beginPath();
-      ctx.arc(px(m), py(m), dot * 1.2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    const me = g.track.mapAt(g.player.d);
+    };
+    for (const r of g.rivals) blip(r.d, r.down ? 'rgba(255,255,255,0.4)' : r.color, dot);
+    if (g.cop.active && !g.cop.down) blip(g.cop.d, Math.floor(g.clock * 6) % 2 ? '#ff3b3b' : '#4a7dff', dot * 1.2);
+    ctx.restore();
+
+    // The rider: an arrow pointing up, the way the bike is heading.
+    const a = dot * 1.5;
     ctx.fillStyle = '#fff';
     ctx.strokeStyle = '#1d1438';
     ctx.lineWidth = Math.max(1.5, dot * 0.5);
     ctx.beginPath();
-    ctx.arc(px(me), py(me), dot * 1.5, 0, Math.PI * 2);
+    ctx.moveTo(cx, cy - a);
+    ctx.lineTo(cx + a * 0.75, cy + a * 0.7);
+    ctx.lineTo(cx, cy + a * 0.3);
+    ctx.lineTo(cx - a * 0.75, cy + a * 0.7);
+    ctx.closePath();
     ctx.fill();
     ctx.stroke();
   }
@@ -753,12 +786,13 @@ export class Renderer {
       for (const [x, y, b] of this.stars) {
         ctx.fillStyle = b > 0.7 ? '#ffffff' : 'rgba(255,255,255,0.55)';
         const sz = Math.max(1, Math.round((w / 900) * (1 + b)));
-        ctx.fillRect(((x + this.skyOffset * 0.3) % 1) * w, y * h, sz, sz);
+        ctx.fillRect(mod(x - this.skyOffset * 0.1, 1) * w, y * h, sz, sz);
       }
     }
 
-    // Sun or moon, drifting with the curves. Flat two-tone shapes, no glow.
-    const sx = w * (0.5 + ((this.skyOffset * 3) % 1) - 0.5);
+    // Sun or moon, drifting slowly with the curves. It wraps around a span
+    // wider than the screen, so it never jumps while in view.
+    const sx = mod(w * 1.42 - this.skyOffset * 0.15 * w, w * 2.6) - w * 0.8;
     const unit = Math.min(w, h * 1.4);
     const body = SKY_BODY[pal.sun];
     if (body && svgArt.drawAt(this.ctx, body.art, sx, h * body.y + unit * body.size * 0.5, unit * body.size)) {
@@ -828,8 +862,8 @@ export class Renderer {
     const lift = playerY / 30000;
     const lw = Math.max(1.5, h / 380);
     this.ridges.forEach((pts, layer) => {
-      const speed = [0.6, 1, 1.6][layer];
-      const off = (this.skyOffset * speed) % 1;
+      const speed = [0.3, 0.55, 1][layer];
+      const off = mod(this.skyOffset * speed, 1);
       if (this.def && this.horizon(`horizon-${this.def.id}-${HORIZON_LAYERS[layer]}` as ArtName, off, h * 0.5 + lift * h * (layer + 1) * 0.03)) return;
       const baseY = h * (0.5 + layer * 0.025) + lift * h * (layer + 1) * 0.03;
       const amp = h * (0.16 - layer * 0.035);
