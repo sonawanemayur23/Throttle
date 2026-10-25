@@ -33,11 +33,11 @@ export function challengeLink(g: Ghost) {
 export async function shareChallenge(g: Ghost): Promise<'shared' | 'copied' | 'failed' | 'cancelled'> {
   const url = challengeLink(g);
   const track = trackById(g.trackId).name;
-  const text = `I rode ${track} in ${formatTime(g.time)} on Throttle. Beat my time:`;
+  const text = `I rode ${track} in ${formatTime(g.time)} on Throttle Bike. Beat my time:`;
   const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void>; canShare?: (d: ShareData) => boolean };
   if (nav.share && (!nav.canShare || nav.canShare({ text, url }))) {
     try {
-      await nav.share({ title: 'Beat my time on Throttle', text, url });
+      await nav.share({ title: 'Beat my time on Throttle Bike', text, url });
       return 'shared';
     } catch (e) {
       if ((e as DOMException)?.name === 'AbortError') return 'cancelled';

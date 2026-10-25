@@ -19,7 +19,7 @@ export function InstallCard({ onClose }: { onClose: () => void }) {
       <div className="install-card">
         <div className="eyebrow">Full screen, like a real game</div>
         <h2 id="installTitle" className="display">
-          Add Throttle to your Home Screen
+          Add Throttle Bike to your Home Screen
         </h2>
         <p className="muted">On iPhone the browser bars stay on screen. From the Home Screen the game opens full screen, with no bars.</p>
         {browser === 'other' ? (
@@ -44,7 +44,7 @@ export function InstallCard({ onClose }: { onClose: () => void }) {
               {browser === 'safari' ? ' (scroll down if you do not see it).' : '.'}
             </li>
             <li>
-              Tap <b>Add</b>, then open <b>Throttle</b> from your Home Screen.
+              Tap <b>Add</b>, then open <b>Throttle Bike</b> from your Home Screen.
             </li>
           </ol>
         )}

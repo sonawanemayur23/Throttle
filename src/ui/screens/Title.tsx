@@ -26,8 +26,10 @@ export function Title({
       </picture>
       <div className="wrap narrow title">
         <div className="title-top">
-          <div className="eyebrow">Prototype</div>
-          <h1 className="wordmark display">Throttle</h1>
+          <div className="eyebrow">90s arcade, back on the road</div>
+          <h1 className="wordmark display" aria-label="Throttle Bike">
+            Throttle<span className="bike">Bike</span>
+          </h1>
           <p className="tagline">Race. Punch. Kick. Win.</p>
         </div>
         <div className="title-bottom">

@@ -270,6 +270,15 @@ button:focus-visible,
   color: #fff;
   text-shadow: 0 5px 0 var(--rose), 0 14px 40px rgba(0, 0, 0, 0.6);
 }
+.wordmark .bike {
+  display: block;
+  margin-top: 0.04em;
+  font-size: 0.34em;
+  letter-spacing: 0.42em;
+  text-indent: 0.42em;
+  color: var(--gold);
+  text-shadow: 0 3px 0 var(--rose), 0 8px 24px rgba(0, 0, 0, 0.5);
+}
 .wordmark::before,
 .wordmark::after {
   content: '';

@@ -10,7 +10,6 @@ State on 25 Oct 2026: Phase 1 done. Phase 2 features done, hosted on Vercel, ana
 
 1. **P2-12** Phone performance on real devices (auto quality, P2-15, is in; check it picks the right setting).
 2. **P2-18** Balance, once there is a week of analytics.
-3. **P2-19** Name and domain (Mayur). Phase 3 cannot launch publicly without it.
 
 Each task below has a Why, a Do and a Done when. If a task is unclear, ask Mayur before building.
 
@@ -42,7 +41,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-16 | Settings: reduce motion, vibration toggle, key remapping | done | Cursor | |
 | P2-17 | Original music loop and engine sound polish | done | Cursor | |
 | P2-18 | Balance pass from playtest data | todo | | P2-13 |
-| P2-19 | Pick the final name and buy the domain | todo | Mayur | |
+| P2-19 | Pick the final name and buy the domain | done | Mayur | |
 | P2-20 | Art direction pass | parked | | P2-19 |
 | P2-21 | Garage art and menu redesign | done | Claude | |
 | P2-22 | In-race graphics overhaul | done | Claude | P2-21 |
@@ -202,6 +201,8 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 | P4-09 | Launch: Product Hunt, Reddit, itch.io, CrazyGames, Poki | todo | P4-05 |
 
 ## Notes
+
+- P2-19, Oct 2026: the name is **Throttle Bike**, at throttlebike.com (GoDaddy, DNS pointed at Vercel; the bare domain redirects to www). Browser title, Home Screen name, title and loading screens, install card, challenge messages, README and docs now say Throttle Bike; the "Prototype" label is gone. Code, repo and save keys keep `throttle`, so saves are untouched. Open Graph tags give shared links the name and description; a score image still needs P3-06.
 
 - Fix, Oct 2026 (Mayur, iPhone): the challenge name box dropped letters and a keyboard suggestion started a new race. The game's keyboard handler took every key, even while typing: A steered left, Space and Enter pressed the main button, M muted, P paused. Key presses inside text boxes are now left alone (`isTyping` in `src/engine/input.ts`); text fields stay selectable; Enter or Done in the name box saves the name and closes the keyboard.
 

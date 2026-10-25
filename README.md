@@ -1,15 +1,15 @@
-# throttle
+# Throttle Bike
 
 Browser motorbike combat racer. Race on open highways, punch and kick rivals off their bikes, play from a link in 5 seconds.
 
-Working codename. The final name is not decided yet.
+Play at **[throttlebike.com](https://www.throttlebike.com)**. The repo and code still use the short name `throttle`.
 
 ## Play
 
-The hosted build is on Vercel. Open that project URL on a phone, then add it to the home screen. After the first visit it keeps working offline. GitHub Pages is not used.
+The hosted build is on Vercel at [www.throttlebike.com](https://www.throttlebike.com) (throttlebike.com redirects there). Open it on a phone, then add it to the home screen. After the first visit it keeps working offline. GitHub Pages is not used.
 
 - Plan: [docs/PLAN.md](docs/PLAN.md)
-- Current phase: **Phase 2, full single player game** (core built, see [docs/TASKS.md](docs/TASKS.md))
+- Current phase: **Phase 2 done in code** (waiting on a week of data); **Phase 3 under way**, see [docs/TASKS.md](docs/TASKS.md)
 
 ## Run it
 

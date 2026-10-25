@@ -1,6 +1,6 @@
 # Product Plan
 
-Working codename: **throttle**. Final name to be decided (shortlist: Revkick, Knocko, Throtto). Domain must be available before Phase 3.
+Name: **Throttle Bike**, at [throttlebike.com](https://www.throttlebike.com) (bought Oct 2026, hosted on Vercel; the bare domain redirects to www). Code keeps the short name `throttle`.
 
 Live doc: https://claude.ai/artifact/4cRqQPkC7pjs8Pg8bYvcsX
 
