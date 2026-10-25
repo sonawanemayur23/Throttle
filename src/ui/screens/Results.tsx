@@ -4,6 +4,9 @@ import { trackById } from '../../content/tracks';
 import type { SaveData } from '../../save/save';
 import { formatTime, money, ordinal } from '../format';
 import { Fact } from '../parts';
+import { useState } from 'react';
+import { shareChallenge } from '../../app/challenge';
+import { track as logPlay } from '../../app/analytics';
 import { GameIcon } from '../art/Icons';
 
 interface Props {
@@ -13,12 +16,28 @@ interface Props {
   onNext: () => void;
   onCareer: () => void;
   onGarage: () => void;
+  /** Save the rider name shown on challenge links. */
+  setName: (name: string) => void;
 }
 
 const suffix = (n: number) => ordinal(n).slice(String(n).length);
 
-export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage }: Props) {
+export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage, setName }: Props) {
   const r = last.results;
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
+  const [name, setNameDraft] = useState(save.settings.name);
+  const vsGhost = last.challenge;
+  const beat = vsGhost && !r.busted && r.ghostTime !== undefined && r.time < r.ghostTime;
+  const share = async () => {
+    if (!last.myGhost) return;
+    const ghost = { ...last.myGhost, name: name.trim() };
+    if (name !== save.settings.name) setName(name);
+    const how = await shareChallenge(ghost);
+    if (how === 'copied') setShareMsg('Link copied. Paste it to a friend.');
+    else if (how === 'failed') setShareMsg('Could not share from this browser.');
+    else setShareMsg(null);
+    if (how === 'shared' || how === 'copied') logPlay('challenge_sent', { method: how, track: ghost.trackId, reply: vsGhost ? 1 : 0 });
+  };
   const qualified = !r.busted && r.place <= QUALIFY_PLACE;
   const verdict = r.busted ? `Fined ${money(r.fine)}` : r.place === 1 ? 'You win' : qualified ? 'Qualified' : `Top ${QUALIFY_PLACE} to qualify`;
   return (
@@ -39,6 +58,15 @@ export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage 
           )}
           <div className="verdict display">{verdict}</div>
         </div>
+        {vsGhost && r.ghostTime !== undefined && (
+          <div className={`banner vs${beat ? ' won' : ''}`}>
+            {r.busted
+              ? `Busted. ${vsGhost.name || 'Your friend'} still holds ${formatTime(r.ghostTime)}.`
+              : beat
+                ? `You beat ${vsGhost.name || 'your friend'} by ${(r.ghostTime - r.time).toFixed(1)}s`
+                : `${vsGhost.name || 'Your friend'} was ${(r.time - r.ghostTime).toFixed(1)}s faster`}
+          </div>
+        )}
         {last.unlocked && <div className="banner">Level {last.unlocked} unlocked: {levelDef(last.unlocked).name}</div>}
 
         <div className="stat-grid">
@@ -66,6 +94,27 @@ export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage 
         <div className="small muted">
           {last.newBest ? 'New best on this track. ' : ''}Cash now {money(last.cashAfter)}
         </div>
+
+        {last.myGhost && (
+          <div className="dare">
+            <div className="dare-head">
+              <b className="display">{vsGhost ? (beat ? 'Send it back' : 'Dare someone else') : 'Challenge a friend'}</b>
+              <span className="muted small">They race your ghost on this track. {formatTime(r.time)} to beat.</span>
+            </div>
+            <label className="dare-name">
+              <span className="small muted">Your name on the link</span>
+              <input value={name} maxLength={16} placeholder="A friend" onChange={(e) => setNameDraft(e.target.value)} />
+            </label>
+            <button type="button" className="btn wide share" onClick={share}>
+              Share challenge
+            </button>
+            {shareMsg && (
+              <p className="small" role="status">
+                {shareMsg}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="actions">
           <button type="button" className="btn wide" data-primary onClick={qualified ? onNext : onAgain}>

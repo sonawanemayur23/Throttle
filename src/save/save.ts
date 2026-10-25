@@ -6,7 +6,7 @@ import { LEVELS, QUALIFY_PLACE } from '../content/career';
 import { TRACKS } from '../content/tracks';
 
 export const SAVE_KEY = 'throttle.save';
-export const SAVE_VERSION = 5;
+export const SAVE_VERSION = 6;
 
 export interface OwnedBike {
   upgrades: Record<UpgradeKind, number>;
@@ -109,6 +109,8 @@ export interface SaveData {
     quality: 'auto' | 'high' | 'low';
     /** Auto quality found this device too slow and switched to low. */
     lowDetected: boolean;
+    /** Rider name shown to friends on challenge links (version 6). Empty: "A friend". */
+    name: string;
     keys: Record<RaceAction, string[]>;
   };
   stats: { races: number; wins: number; kos: number; busted: number };
@@ -122,7 +124,7 @@ export function newSave(): SaveData {
     selectedBike: BIKES[0].id,
     career: {},
     bestScore: {},
-    settings: { muted: false, hints: true, music: 0.7, reduceMotion: false, vibration: true, gameMode: true, quality: 'auto', lowDetected: false, keys: copyKeys(DEFAULT_KEYS) },
+    settings: { muted: false, hints: true, music: 0.7, reduceMotion: false, vibration: true, gameMode: true, quality: 'auto', lowDetected: false, name: '', keys: copyKeys(DEFAULT_KEYS) },
     stats: { races: 0, wins: 0, kos: 0, busted: 0 },
   };
 }
@@ -132,7 +134,7 @@ export function migrate(raw: unknown): SaveData {
   const fresh = newSave();
   if (!raw || typeof raw !== 'object') return fresh;
   const r = raw as Partial<SaveData>;
-  const prev = (r.settings ?? {}) as { music?: unknown; reduceMotion?: unknown; vibration?: unknown; gameMode?: unknown; quality?: unknown; lowDetected?: unknown; keys?: unknown };
+  const prev = (r.settings ?? {}) as { music?: unknown; reduceMotion?: unknown; vibration?: unknown; gameMode?: unknown; quality?: unknown; lowDetected?: unknown; name?: unknown; keys?: unknown };
   const out: SaveData = {
     ...fresh,
     cash: Number.isFinite(r.cash) ? Math.max(0, Math.floor(r.cash as number)) : 0,
@@ -148,6 +150,7 @@ export function migrate(raw: unknown): SaveData {
       gameMode: prev.gameMode !== false,
       quality: prev.quality === 'high' || prev.quality === 'low' ? prev.quality : 'auto',
       lowDetected: prev.lowDetected === true,
+      name: cleanName(prev.name),
       keys: normalizeKeys(prev.keys),
     },
     stats: { ...fresh.stats, ...(r.stats ?? {}) },
@@ -234,6 +237,13 @@ export interface RaceRecord {
   busted: boolean;
   fine: number;
   score: number;
+  /** A challenge race: cash and stats count, career places do not. */
+  challenge?: boolean;
+}
+
+/** A rider name for challenge links: trimmed, at most 16 characters. */
+export function cleanName(v: unknown): string {
+  return typeof v === 'string' ? v.replace(/\s+/g, ' ').trim().slice(0, 16) : '';
 }
 
 /** Apply a finished race. Returns the new save and whether a level unlocked. */
@@ -244,7 +254,7 @@ export function recordRace(s: SaveData, r: RaceRecord): { save: SaveData; unlock
   next.stats.races++;
   next.stats.kos += r.kos;
   if (r.busted) next.stats.busted++;
-  if (!r.busted) {
+  if (!r.busted && !r.challenge) {
     if (r.place === 1) next.stats.wins++;
     const lv = (next.career[r.level] ??= {});
     lv[r.trackId] = Math.min(lv[r.trackId] ?? 99, r.place);

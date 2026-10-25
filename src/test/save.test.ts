@@ -89,7 +89,7 @@ describe('save', () => {
     const s = migrate({ version: 1, cash: 80, settings: { muted: true, hints: false } });
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.cash).toBe(80);
-    expect(s.settings).toEqual({ muted: true, hints: false, music: 0.7, reduceMotion: false, vibration: true, gameMode: true, quality: 'auto', lowDetected: false, keys: DEFAULT_KEYS });
+    expect(s.settings).toEqual({ muted: true, hints: false, music: 0.7, reduceMotion: false, vibration: true, gameMode: true, quality: 'auto', lowDetected: false, name: '', keys: DEFAULT_KEYS });
     expect(migrate({ settings: { music: 9 } }).settings.music).toBe(1);
     expect(migrate({ settings: { music: 0 } }).settings.music).toBe(0);
     expect(migrate({ settings: { music: 'loud' } }).settings.music).toBe(0.7);
@@ -116,6 +116,10 @@ describe('save', () => {
     expect(migrate({ version: 4, settings: {} }).settings.quality).toBe('auto');
     expect(migrate({ version: 5, settings: { quality: 'low', lowDetected: true } }).settings).toMatchObject({ quality: 'low', lowDetected: true });
     expect(migrate({ version: 5, settings: { quality: 'ultra' } }).settings.quality).toBe('auto');
+    // Version 6: rider name for challenges, cleaned.
+    expect(migrate({ version: 5, settings: {} }).settings.name).toBe('');
+    expect(migrate({ version: 6, settings: { name: '  Mayur   S  ' } }).settings.name).toBe('Mayur S');
+    expect(migrate({ version: 6, settings: { name: 42 } }).settings.name).toBe('');
     expect(old.settings.music).toBe(0.4);
     expect(old.settings.keys).toEqual(DEFAULT_KEYS);
     const custom = migrate({

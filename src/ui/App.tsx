@@ -4,9 +4,12 @@ import type { GameHost } from '../app/host';
 import { raceSetup } from '../app/setup';
 import { enterGameMode, installCardDue, isImmersive, iosBrowser, isTouchDevice, markInstallCard, turnTipDue } from '../app/gameMode';
 import { InstallCard } from './InstallCard';
+import { ChallengeScreen } from './screens/Challenge';
+import { challengeFromUrl, clearChallengeUrl } from '../app/challenge';
+import type { Ghost } from '../engine/ghost';
 import { TRACKS } from '../content/tracks';
 import type { Results } from '../engine/game';
-import { loadSave, recordRace, unlockedLevel, writeSave, type SaveData } from '../save/save';
+import { cleanName, loadSave, recordRace, unlockedLevel, writeSave, type SaveData } from '../save/save';
 import { Career } from './screens/Career';
 import { Garage } from './screens/Garage';
 import { Help } from './screens/Help';
@@ -15,7 +18,7 @@ import { ResultsScreen } from './screens/Results';
 import { Settings } from './screens/Settings';
 import { Title } from './screens/Title';
 
-export type Screen = 'title' | 'career' | 'garage' | 'help' | 'settings' | 'race' | 'results';
+export type Screen = 'title' | 'career' | 'garage' | 'help' | 'settings' | 'race' | 'results' | 'challenge';
 
 export interface LastRace {
   results: Results;
@@ -23,11 +26,19 @@ export interface LastRace {
   unlocked: number | null;
   cashAfter: number;
   newBest: boolean;
+  /** This race as a ghost, ready to send as a challenge. Missing when busted. */
+  myGhost?: Ghost;
+  /** The ghost this race was against, if it was a challenge. */
+  challenge?: Ghost;
 }
 
 export function App({ host }: { host: GameHost }) {
   const [save, setSaveState] = useState<SaveData>(loadSave);
-  const [screen, setScreen] = useState<Screen>('title');
+  // A "Beat my time" link opens on the challenge card.
+  const [incoming, setIncoming] = useState<Ghost | null>(challengeFromUrl);
+  const [screen, setScreen] = useState<Screen>(() => (incoming ? 'challenge' : 'title'));
+  /** The ghost for the race running now, if it is a challenge. */
+  const raceGhost = useRef<Ghost | null>(null);
   const [back, setBack] = useState<Screen>('title');
   const [paused, setPaused] = useState(false);
   const [level, setLevel] = useState(() => unlockedLevel(loadSave()));
@@ -53,16 +64,20 @@ export function App({ host }: { host: GameHost }) {
   );
 
   const race = useCallback(
-    (lvl: number, track: string) => {
-      setLevel(lvl);
-      setTrackId(track);
+    (lvl: number, track: string, ghost: Ghost | null = null) => {
+      raceGhost.current = ghost;
+      // A challenge runs at the sender's level, but the career stays where it was.
+      if (!ghost) {
+        setLevel(lvl);
+        setTrackId(track);
+      }
       setPaused(false);
       setScreen('race');
       // Game mode: full screen on phones. This runs inside the tap that starts the race.
       if (saveRef.current.settings.gameMode && isTouchDevice()) enterGameMode();
       // iPhone browser tab: a sideways phone hides most of the browser bars.
       setTurnTip(turnTipDue());
-      host.startRace(raceSetup(saveRef.current, lvl, track));
+      host.startRace({ ...raceSetup(saveRef.current, lvl, track), ghost });
       logPlay('race_start', { track, level: lvl, bike: saveRef.current.selectedBike });
     },
     [host],
@@ -89,7 +104,9 @@ export function App({ host }: { host: GameHost }) {
     host.onFinish = (r) => {
       const s = saveRef.current;
       const prevBest = s.bestScore[r.trackId] ?? 0;
+      const vs = raceGhost.current;
       const { save: next, unlocked } = recordRace(s, {
+        challenge: !!vs,
         level: r.level,
         trackId: r.trackId,
         place: r.place,
@@ -100,7 +117,13 @@ export function App({ host }: { host: GameHost }) {
         score: r.score,
       });
       setSave(next);
-      setLast({ results: r, earnings: r.score, unlocked, cashAfter: next.cash, newBest: r.score > prevBest });
+      // This race as a ghost, so the player can dare a friend to beat it.
+      const rec = host.game.recorder;
+      const myGhost: Ghost | undefined = r.busted
+        ? undefined
+        : { trackId: r.trackId, level: r.level, bikeId: s.selectedBike, time: r.time, place: r.place, name: s.settings.name, d: [...rec.d], x: [...rec.x] };
+      setLast({ results: r, earnings: r.score, unlocked, cashAfter: next.cash, newBest: r.score > prevBest, myGhost, challenge: vs ?? undefined });
+      if (vs) logPlay('challenge_result', { won: !r.busted && r.time < vs.time ? 1 : 0, track: r.trackId });
       logPlay('race_end', { place: r.place, time: Math.round(r.time * 10) / 10, busted: r.busted ? 1 : 0, kos: r.kos + r.copKos });
       if (unlocked) {
         setLevel(unlocked);
@@ -125,7 +148,19 @@ export function App({ host }: { host: GameHost }) {
   // Once per load: count Home Screen launches, so we can see if the install card works.
   useEffect(() => {
     logPlay('app_open', { display: isImmersive() ? 'home_screen' : 'browser', ios: iosBrowser() ?? 'no' });
-  }, []);
+    const g = challengeFromUrl();
+    if (g) logPlay('challenge_open', { track: g.trackId, level: g.level });
+    // A challenge link opened while the game is already open in this tab.
+    const onHash = () => {
+      const next = challengeFromUrl();
+      if (!next || host.racing) return;
+      logPlay('challenge_open', { track: next.trackId, level: next.level });
+      setIncoming(next);
+      setScreen('challenge');
+    };
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, [host]);
 
   // The install card shows on the title or career screen: before the first race, and after the third.
   useEffect(() => {
@@ -169,6 +204,20 @@ export function App({ host }: { host: GameHost }) {
   return (
     <>
       {screen === 'title' && <Title save={save} go={go} />}
+      {screen === 'challenge' && incoming && (
+        <ChallengeScreen
+          ghost={incoming}
+          onRace={() => {
+            clearChallengeUrl();
+            race(incoming.level, incoming.trackId, incoming);
+          }}
+          onSkip={() => {
+            clearChallengeUrl();
+            setIncoming(null);
+            setScreen('title');
+          }}
+        />
+      )}
       {installCard && (
         <InstallCard
           onClose={() => {
@@ -200,7 +249,11 @@ export function App({ host }: { host: GameHost }) {
       {screen === 'race' && paused && (
         <Pause
           onResume={() => host.setPaused(false)}
-          onRestart={() => race(level, trackId)}
+          onRestart={() => {
+            const g = raceGhost.current;
+            if (g) race(g.level, g.trackId, g);
+            else race(level, trackId);
+          }}
           onHelp={() => {
             setBack('race');
             setScreen('help');
@@ -216,8 +269,9 @@ export function App({ host }: { host: GameHost }) {
         <ResultsScreen
           last={last}
           save={save}
-          onAgain={() => race(level, trackId)}
+          onAgain={() => (last.challenge ? race(last.challenge.level, last.challenge.trackId, last.challenge) : race(level, trackId))}
           onNext={nextTrack}
+          setName={(name) => setSave({ ...saveRef.current, settings: { ...saveRef.current.settings, name: cleanName(name) } })}
           onCareer={() => setScreen('career')}
           onGarage={() => {
             setBack('career');
