@@ -4,8 +4,16 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
     <meta name="theme-color" content="#2b2257" />
-    <title>Throttle Prototype</title>
-    <meta name="description" content="Race motorbikes, punch rivals off the road, outrun the police. Plays in the browser on phone and desktop." />
+    <title>Throttle Bike: 90s arcade bike brawler</title>
+    <meta name="description" content="Throttle Bike: race motorbikes, punch rivals off the road, outrun the police. Free in the browser on phone and desktop." />
+    <meta name="apple-mobile-web-app-title" content="Throttle Bike" />
+    <meta name="application-name" content="Throttle Bike" />
+    <link rel="canonical" href="https://www.throttlebike.com/" />
+    <meta property="og:site_name" content="Throttle Bike" />
+    <meta property="og:title" content="Throttle Bike" />
+    <meta property="og:description" content="Race. Punch. Kick. Win. A 90s arcade bike brawler you play in the browser." />
+    <meta property="og:url" content="https://www.throttlebike.com/" />
+    <meta property="og:type" content="website" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- Fonts load without blocking the first paint, so the loading screen shows at once. -->
@@ -32,6 +40,7 @@
       @keyframes boot-in { from { transform: translateX(-60vw) skewX(-12deg); opacity: 0; } to { transform: none; opacity: 1; } }
       @keyframes boot-rev { 50% { transform: translateX(3px) skewX(-3deg); } }
       @keyframes boot-streak { 0% { opacity: 0; transform: translateX(40px) skewX(-24deg); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateX(-60px) skewX(-24deg); } }
+      #boot .logo .bike { display: block; margin-top: 0.06em; font-size: 0.36em; letter-spacing: 0.42em; color: #ffd34d; text-shadow: 0 3px 0 #c2577a; }
       #boot .tag { font-weight: 800; font-size: clamp(15px, 4.4vw, 22px); letter-spacing: 0.16em; text-transform: uppercase; }
       #boot .bar { width: min(260px, 64vw); height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.35); overflow: hidden; }
       #boot .bar i { display: block; height: 100%; width: 40%; border-radius: 4px; background: #ffd34d; animation: boot-bar 1.2s ease-in-out infinite; }
@@ -51,7 +60,7 @@
       <div class="road"></div>
       <div class="inner">
         <div class="eyebrow">90s ARCADE, BACK ON THE ROAD</div>
-        <h1 class="logo">THROTTLE</h1>
+        <h1 class="logo">THROTTLE<span class="bike">BIKE</span></h1>
         <div class="tag">Race. Punch. Kick. Win.</div>
         <div class="bar"><i></i></div>
         <p class="tip" id="bootTip"><b>Steer</b> with the left pad. The throttle is automatic.</p>

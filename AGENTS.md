@@ -4,7 +4,7 @@ Read this first. It tells any coding agent (Claude, Codex, Cursor or a person) h
 
 ## What this is
 
-A browser motorbike combat racer. Race on highways, punch and kick rivals off their bikes, outrun the police. Plays from a link on phone and desktop. Working codename **throttle**; the final name is not chosen yet.
+A browser motorbike combat racer. Race on highways, punch and kick rivals off their bikes, outrun the police. Plays from a link on phone and desktop. The name is **Throttle Bike**, live at https://www.throttlebike.com. Code, repo and save keys keep the short name `throttle`; do not rename them (it would wipe saves).
 
 - Product plan and phases: [docs/PLAN.md](docs/PLAN.md)
 - Task board with IDs, status and acceptance criteria: [docs/TASKS.md](docs/TASKS.md)
