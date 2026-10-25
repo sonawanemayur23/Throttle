@@ -1526,3 +1526,57 @@ textarea {
   user-select: text;
   touch-action: manipulation;
 }
+
+/* ---- Daily race (P3-05) ---- */
+.daily {
+  display: grid;
+  gap: 6px;
+  width: min(420px, 100%);
+  padding: 12px 14px;
+  background: rgba(18, 13, 38, 0.78);
+  box-shadow: inset 0 0 0 1px var(--gold);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  text-align: left;
+}
+.daily-top,
+.daily-mid {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.daily-top b {
+  font-size: 20px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.daily-mid {
+  font-weight: 700;
+}
+.daily .streak {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--coral);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+.daily p {
+  margin: 0;
+}
+.daily .btn {
+  min-height: 44px;
+}
+.banner.daily-banner {
+  display: grid;
+  gap: 2px;
+  background: var(--gold);
+}
+.banner.daily-banner.won {
+  background: var(--mint);
+}
+.banner .sub {
+  font-size: 14px;
+  font-style: normal;
+}

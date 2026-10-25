@@ -7,9 +7,10 @@ import { InstallCard } from './InstallCard';
 import { ChallengeScreen } from './screens/Challenge';
 import { challengeFromUrl, clearChallengeUrl } from '../app/challenge';
 import type { Ghost } from '../engine/ghost';
+import { dailyFor, dayBefore, type DailyRace } from '../content/daily';
 import { TRACKS } from '../content/tracks';
 import type { Results } from '../engine/game';
-import { cleanName, loadSave, recordRace, unlockedLevel, writeSave, type SaveData } from '../save/save';
+import { cleanName, loadSave, recordDaily, recordRace, unlockedLevel, writeSave, type SaveData } from '../save/save';
 import { Career } from './screens/Career';
 import { Garage } from './screens/Garage';
 import { Help } from './screens/Help';
@@ -30,6 +31,8 @@ export interface LastRace {
   myGhost?: Ghost;
   /** The ghost this race was against, if it was a challenge. */
   challenge?: Ghost;
+  /** Set when this was the daily race. */
+  daily?: { race: DailyRace; best: number | null; paid: number; newBest: boolean; streak: number };
 }
 
 export function App({ host }: { host: GameHost }) {
@@ -39,6 +42,8 @@ export function App({ host }: { host: GameHost }) {
   const [screen, setScreen] = useState<Screen>(() => (incoming ? 'challenge' : 'title'));
   /** The ghost for the race running now, if it is a challenge. */
   const raceGhost = useRef<Ghost | null>(null);
+  /** The daily race running now, if any. */
+  const raceDaily = useRef<DailyRace | null>(null);
   const [back, setBack] = useState<Screen>('title');
   const [paused, setPaused] = useState(false);
   const [level, setLevel] = useState(() => unlockedLevel(loadSave()));
@@ -64,10 +69,11 @@ export function App({ host }: { host: GameHost }) {
   );
 
   const race = useCallback(
-    (lvl: number, track: string, ghost: Ghost | null = null) => {
+    (lvl: number, track: string, ghost: Ghost | null = null, daily: DailyRace | null = null) => {
       raceGhost.current = ghost;
-      // A challenge runs at the sender's level, but the career stays where it was.
-      if (!ghost) {
+      raceDaily.current = daily;
+      // Challenges and the daily run at their own level; the career stays where it was.
+      if (!ghost && !daily) {
         setLevel(lvl);
         setTrackId(track);
       }
@@ -77,8 +83,8 @@ export function App({ host }: { host: GameHost }) {
       if (saveRef.current.settings.gameMode && isTouchDevice()) enterGameMode();
       // iPhone browser tab: a sideways phone hides most of the browser bars.
       setTurnTip(turnTipDue());
-      host.startRace({ ...raceSetup(saveRef.current, lvl, track), ghost });
-      logPlay('race_start', { track, level: lvl, bike: saveRef.current.selectedBike });
+      host.startRace({ ...raceSetup(saveRef.current, lvl, track), ghost, noFine: !!ghost || !!daily });
+      logPlay('race_start', { track, level: lvl, bike: saveRef.current.selectedBike, mode: daily ? 'daily' : ghost ? 'challenge' : 'career' });
     },
     [host],
   );
@@ -105,8 +111,9 @@ export function App({ host }: { host: GameHost }) {
       const s = saveRef.current;
       const prevBest = s.bestScore[r.trackId] ?? 0;
       const vs = raceGhost.current;
-      const { save: next, unlocked } = recordRace(s, {
-        challenge: !!vs,
+      const daily = raceDaily.current;
+      const { save: afterRace, unlocked } = recordRace(s, {
+        challenge: !!vs || !!daily,
         level: r.level,
         trackId: r.trackId,
         place: r.place,
@@ -116,13 +123,22 @@ export function App({ host }: { host: GameHost }) {
         fine: r.fine,
         score: r.score,
       });
+      // The daily: best time, first-finish bonus and the day streak.
+      let next = afterRace;
+      let dailyInfo: LastRace['daily'];
+      if (daily) {
+        const d = recordDaily(afterRace, daily.key, dayBefore(daily.key), r.busted ? null : r.time, daily.bonus);
+        next = d.save;
+        dailyInfo = { race: daily, best: next.daily.best, paid: d.paid, newBest: d.newBest, streak: next.streak.days };
+        logPlay('daily_end', { key: daily.key, track: daily.trackId, finished: r.busted ? 0 : 1, best: d.newBest ? 1 : 0, streak: next.streak.days });
+      }
       setSave(next);
       // This race as a ghost, so the player can dare a friend to beat it.
       const rec = host.game.recorder;
       const myGhost: Ghost | undefined = r.busted
         ? undefined
         : { trackId: r.trackId, level: r.level, bikeId: s.selectedBike, time: r.time, place: r.place, name: s.settings.name, d: [...rec.d], x: [...rec.x] };
-      setLast({ results: r, earnings: r.score, unlocked, cashAfter: next.cash, newBest: r.score > prevBest, myGhost, challenge: vs ?? undefined });
+      setLast({ results: r, earnings: r.score, unlocked, cashAfter: next.cash, newBest: r.score > prevBest, myGhost, challenge: vs ?? undefined, daily: dailyInfo });
       if (vs) logPlay('challenge_result', { won: !r.busted && r.time < vs.time ? 1 : 0, track: r.trackId });
       logPlay('race_end', { place: r.place, time: Math.round(r.time * 10) / 10, busted: r.busted ? 1 : 0, kos: r.kos + r.copKos });
       if (unlocked) {
@@ -203,7 +219,7 @@ export function App({ host }: { host: GameHost }) {
 
   return (
     <>
-      {screen === 'title' && <Title save={save} go={go} />}
+      {screen === 'title' && <Title save={save} go={go} onDaily={(d) => race(d.level, d.trackId, null, d)} />}
       {screen === 'challenge' && incoming && (
         <ChallengeScreen
           ghost={incoming}
@@ -251,7 +267,9 @@ export function App({ host }: { host: GameHost }) {
           onResume={() => host.setPaused(false)}
           onRestart={() => {
             const g = raceGhost.current;
-            if (g) race(g.level, g.trackId, g);
+            const d = raceDaily.current;
+            if (d) race(d.level, d.trackId, null, d);
+            else if (g) race(g.level, g.trackId, g);
             else race(level, trackId);
           }}
           onHelp={() => {
@@ -269,7 +287,14 @@ export function App({ host }: { host: GameHost }) {
         <ResultsScreen
           last={last}
           save={save}
-          onAgain={() => (last.challenge ? race(last.challenge.level, last.challenge.trackId, last.challenge) : race(level, trackId))}
+          onAgain={() => {
+            if (last.daily) {
+              // A new UTC day may have started since; race whatever is today's.
+              const d = dailyFor();
+              race(d.level, d.trackId, null, d);
+            } else if (last.challenge) race(last.challenge.level, last.challenge.trackId, last.challenge);
+            else race(level, trackId);
+          }}
           onNext={nextTrack}
           setName={(name) => setSave({ ...saveRef.current, settings: { ...saveRef.current.settings, name: cleanName(name) } })}
           onCareer={() => setScreen('career')}

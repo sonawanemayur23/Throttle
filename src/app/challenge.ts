@@ -30,10 +30,12 @@ export function challengeLink(g: Ghost) {
 }
 
 /** Share a challenge: the phone's share sheet when there is one, else copy the link. */
-export async function shareChallenge(g: Ghost): Promise<'shared' | 'copied' | 'failed' | 'cancelled'> {
+export async function shareChallenge(g: Ghost, daily = false): Promise<'shared' | 'copied' | 'failed' | 'cancelled'> {
   const url = challengeLink(g);
   const track = trackById(g.trackId).name;
-  const text = `I rode ${track} in ${formatTime(g.time)} on Throttle Bike. Beat my time:`;
+  const text = daily
+    ? `Today's Throttle Bike daily race on ${track}: ${formatTime(g.time)}. Beat me before the reset:`
+    : `I rode ${track} in ${formatTime(g.time)} on Throttle Bike. Beat my time:`;
   const nav = navigator as Navigator & { share?: (d: ShareData) => Promise<void>; canShare?: (d: ShareData) => boolean };
   if (nav.share && (!nav.canShare || nav.canShare({ text, url }))) {
     try {
