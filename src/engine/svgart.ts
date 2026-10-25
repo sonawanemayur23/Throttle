@@ -248,6 +248,17 @@ export class SvgArt {
     for (const n of names) this.image(n, {});
   }
 
+  /** Resolves when every base image started by `preload` has decoded (or failed). */
+  loaded(): Promise<void> {
+    const all = [...this.images.values()].map((img) =>
+      img.complete ? Promise.resolve() : new Promise<void>((done) => {
+        img.addEventListener('load', () => done(), { once: true });
+        img.addEventListener('error', () => done(), { once: true });
+      }),
+    );
+    return Promise.all(all).then(() => undefined);
+  }
+
   /** Start decoding these assets in these colors before they are needed. */
   warm(names: ArtName[], paints: Paint[]) {
     for (const n of names) for (const p of paints) this.image(n, p);
