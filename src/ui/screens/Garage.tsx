@@ -5,6 +5,7 @@ import { BIKES, MAX_UPGRADE, STOCK, UPGRADE_INFO, UPGRADE_KINDS, bikeStats, upgr
 import { buyBike, buyUpgrade, type SaveData } from '../../save/save';
 import { BikeArt } from '../art/BikeArt';
 import { PartArt } from '../art/PartArt';
+import { GameIcon } from '../art/Icons';
 import { money } from '../format';
 import { TopNav } from '../parts';
 
@@ -175,7 +176,14 @@ export function Garage({ save, setSave, back }: Props) {
                 >
                   <BikeArt bikeId={b.id} color={b.color} upgrades={save.bikes[b.id]?.upgrades} title={b.name} />
                   <b>{b.name}</b>
-                  {has ? <span className="muted">{save.selectedBike === b.id ? 'Riding' : 'Owned'}</span> : <span className="money">{money(b.price)}</span>}
+                  {has ? (
+                    <span className="muted">{save.selectedBike === b.id ? 'Riding' : 'Owned'}</span>
+                  ) : (
+                    <span className="money">
+                      <GameIcon name="lock" className="inline" />
+                      {money(b.price)}
+                    </span>
+                  )}
                 </button>
               );
             })}

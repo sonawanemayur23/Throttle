@@ -202,3 +202,42 @@ body.racing #topbar {
 body:not(.racing) #topbar {
   display: none;
 }
+
+/* Prompt 8 icons inside the touch and top bar buttons. */
+.fight button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0;
+}
+.fight button .ico {
+  width: 56%;
+  height: 56%;
+  pointer-events: none;
+}
+.fight button span {
+  font-size: 10px;
+  pointer-events: none;
+}
+.b-brake .ico {
+  width: 70%;
+  height: 70%;
+}
+.b-brake span {
+  display: none;
+}
+#topbar button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+#topbar button .ico {
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+}
+body.racing #pauseBtn {
+  display: grid;
+}

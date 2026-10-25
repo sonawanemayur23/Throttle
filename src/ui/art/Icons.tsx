@@ -1,4 +1,5 @@
-// Small line icons for menu tiles.
+// Small line icons for menu tiles, plus GameIcon for the Prompt 8 game icons.
+import { iconUrl, type IconName } from '../../app/uiArt';
 const P = { fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
 
 export const IconWrench = () => (
@@ -17,4 +18,9 @@ export const IconGear = () => (
     <circle {...P} cx="12" cy="12" r="3" />
     <path {...P} d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
   </svg>
+);
+
+/** A game icon from the Prompt 8 art. Decorative: pair it with visible text. */
+export const GameIcon = ({ name, className }: { name: IconName; className?: string }) => (
+  <img className={`gi${className ? ` ${className}` : ''}`} src={iconUrl(name)} alt="" aria-hidden="true" draggable={false} />
 );

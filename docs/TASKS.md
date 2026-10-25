@@ -6,15 +6,14 @@ Status: `todo`, `doing`, `done`, `blocked`, `parked`.
 
 ## Next up
 
-State on 25 Oct 2026: Phase 1 done. Phase 2 features done, hosted on Vercel, comfort settings and music in, nearly all art from Claude Design. Phase 2 is not closed: the gate needs a week of Umami data, and P2-12, P2-15, P2-18, P2-19 and the rest of P2-27 are open. Work in this order:
+State on 25 Oct 2026: Phase 1 done. Phase 2 features done, hosted on Vercel, comfort settings and music in, all 8 art prompts from Claude Design in the game. Phase 2 is not closed: the gate needs a week of Umami data, and P2-12, P2-15, P2-18 and P2-19 are open. Work in this order:
 
 1. **P2-13** Finish analytics: confirm a hosted race shows in Umami, save the retention and races-per-day reports.
 2. **P2-12** Phone performance on real devices, then **P2-15** auto quality if needed.
-3. **P2-27** Icons and title art, as soon as Mayur sends the Prompt 8 output.
-4. **P2-28** Upgrades visible on the garage bike again.
-5. **P2-29** Sky polish, **P2-30** rider proportions.
-6. **P2-18** Balance, once there is a week of analytics.
-7. **P2-19** Name and domain (Mayur). Phase 3 cannot launch publicly without it.
+3. **P2-28** Upgrades visible on the garage bike again.
+4. **P2-29** Sky polish, **P2-30** rider proportions.
+5. **P2-18** Balance, once there is a week of analytics.
+6. **P2-19** Name and domain (Mayur). Phase 3 cannot launch publicly without it.
 
 Each task below has a Why, a Do and a Done when. If a task is unclear, ask Mayur before building.
 
@@ -54,7 +53,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-24 | Riders from Prompt 2 art | done | Claude | P2-23 |
 | P2-25 | Police and traffic from Prompt 3 art | done | Claude | P2-24 |
 | P2-26 | Props and horizons from Prompts 4 to 6: coast, desert, mountain and city props, 12 horizon strips, sun and moon art | done | Claude | P2-23, art from Mayur |
-| P2-27 | Garage art and icons from Prompts 7 and 8. Garage bikes and parts (Prompt 7) done; icons and title art (Prompt 8) wait on art | in progress | Claude | P2-23, art from Mayur |
+| P2-27 | Garage art, icons and title art from Prompts 7 and 8 | done | Claude | P2-23, art from Mayur |
 | P2-28 | Show upgrades on the garage bike again | todo | | P2-27 |
 | P2-29 | Sky polish: art-matched sky bands, stars and lamp glows | todo | | P2-26 |
 | P2-30 | Rider proportions: rerun the updated Prompt 2 | todo | Mayur, then any agent | P2-24 |
@@ -201,6 +200,8 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 | P4-09 | Launch: Product Hunt, Reddit, itch.io, CrazyGames, Poki | todo | P4-05 |
 
 ## Notes
+
+- P2-27 part 2, Oct 2026: 12 game icons and 2 title scenes from Prompt 8, in `src/art/ui/`, loaded by `src/app/uiArt.ts`. Icons are in the touch buttons (punch, kick, brake, club or chain), the pause and sound buttons (sound swaps on and off), results (trophy for a top 3 finish, police when busted, cash by earnings), and locks on career levels and garage bikes. The title screen shows the wide scene on landscape screens and the tall one on portrait, with the logo in the clear top third; the bike picture moved off the title. Title scenes are about 50 KB, so the art test allows 60 KB for `title-*` only. The menu tile icons (garage, how to play, settings) were not in Prompt 8 and stay code-drawn.
 
 - P2-31, Oct 2026: the minimap was north-up over the whole track, so a right bend looked like a left whenever the route headed down, and loops crossed. It is now heading-up: it shows the stretch around the rider (10 percent of the track), turned so the rider points up, with an arrow for the rider. The route's turn rate is softer (0.003 per curve unit). The horizon slid far too slowly on turns (the rate was scaled by frame time twice), and the sun and stars jumped across the screen when the offset went negative. The slide is now about 0.15 screen widths per second on a hard bend for the near strip, layers move at 0.3, 0.55 and 1, and the sun wraps outside the screen.
 

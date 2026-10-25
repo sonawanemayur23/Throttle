@@ -4,6 +4,7 @@ import { trackById } from '../../content/tracks';
 import type { SaveData } from '../../save/save';
 import { formatTime, money, ordinal } from '../format';
 import { Fact } from '../parts';
+import { GameIcon } from '../art/Icons';
 
 interface Props {
   last: LastRace;
@@ -27,6 +28,7 @@ export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage 
           Race {save.stats.races} / {trackById(r.trackId).name} / Level {r.level}
         </div>
         <div className={`podium${r.busted ? ' busted' : r.place === 1 ? ' win' : ''}`}>
+          {r.busted ? <GameIcon name="police" className="podium-ico" /> : r.place <= 3 && <GameIcon name="trophy" className="podium-ico" />}
           {r.busted ? (
             <div className="big display">Busted</div>
           ) : (
@@ -55,7 +57,10 @@ export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage 
         </div>
 
         <div className="earned">
-          <span>Earned</span>
+          <span>
+            <GameIcon name="cash" className="inline" />
+            Earned
+          </span>
           <b className="money">{money(last.earnings - r.fine)}</b>
         </div>
         <div className="small muted">

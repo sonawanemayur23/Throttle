@@ -1122,3 +1122,61 @@ textarea {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ---- Prompt 8 art: title scene and game icons ---- */
+.title-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+}
+.title-bg img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 70%;
+}
+.title-bg::after {
+  /* Darken the road behind the buttons so they stay readable. */
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(18, 13, 38, 0.2) 0%, rgba(18, 13, 38, 0) 30%, rgba(18, 13, 38, 0) 55%, rgba(18, 13, 38, 0.7) 78%, rgba(18, 13, 38, 0.92) 100%);
+}
+.title-scr {
+  background: none;
+}
+.title-scr .title {
+  min-height: calc(100dvh - 48px);
+  align-content: space-between;
+}
+.title-top,
+.title-bottom {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  width: 100%;
+}
+.title-top .tagline {
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+.gi {
+  display: inline-block;
+  width: 1.4em;
+  height: 1.4em;
+  vertical-align: -0.35em;
+  pointer-events: none;
+}
+.gi.inline {
+  width: 1.15em;
+  height: 1.15em;
+  margin-right: 0.3em;
+  vertical-align: -0.2em;
+}
+.podium-ico {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 4px;
+  display: block;
+}

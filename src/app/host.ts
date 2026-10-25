@@ -3,6 +3,7 @@
 // means a React re-render can never drop a frame.
 
 import { Sound } from '../engine/audio';
+import { setButtonIcon } from './uiArt';
 import { Game, WEAPONS, type RaceSetup, type Results } from '../engine/game';
 import { Input, type Btn } from '../engine/input';
 import { Renderer } from '../engine/render';
@@ -52,6 +53,12 @@ export class GameHost {
       }
       this.last = performance.now();
     });
+    // Icons from the Prompt 8 art in the touch and top bar buttons.
+    setButtonIcon(document.querySelector('.b-punch'), 'punch', 'PUNCH');
+    setButtonIcon(document.querySelector('.b-kick'), 'kick', 'KICK');
+    setButtonIcon(document.querySelector('.b-brake'), 'brake', 'BRAKE');
+    setButtonIcon(document.getElementById('pauseBtn'), 'pause');
+    setButtonIcon(document.getElementById('mute'), 'sound-on');
     document.getElementById('pauseBtn')?.addEventListener('click', (e) => {
       e.stopPropagation();
       this.setPaused(true);
@@ -82,7 +89,7 @@ export class GameHost {
     this.sound.setMuted(m);
     const btn = document.getElementById('mute');
     if (btn) {
-      btn.textContent = m ? '\u{1F507}' : '\u{1F50A}';
+      setButtonIcon(btn, m ? 'sound-off' : 'sound-on');
       btn.setAttribute('aria-pressed', String(m));
     }
   }
@@ -155,7 +162,7 @@ export class GameHost {
     if (w === this.shownWeapon) return;
     this.shownWeapon = w;
     document.body.classList.toggle('has-weapon', !!w);
-    if (w && this.weaponBtn) this.weaponBtn.textContent = WEAPONS[w].label;
+    if (w && this.weaponBtn) setButtonIcon(this.weaponBtn, w, WEAPONS[w].label);
   }
 
   private frame = (now: number) => {

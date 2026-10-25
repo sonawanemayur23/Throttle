@@ -6,6 +6,7 @@ import { LEVELS, QUALIFY_PLACE } from '../../content/career';
 import { TRACKS } from '../../content/tracks';
 import { levelCleared, unlockedLevel, type SaveData } from '../../save/save';
 import { BikeArt } from '../art/BikeArt';
+import { GameIcon } from '../art/Icons';
 import { money, ordinal } from '../format';
 import { Fact, TopNav } from '../parts';
 
@@ -63,7 +64,7 @@ export function Career({ save, level, setLevel, trackId, setTrackId, race, go }:
               disabled={l.level > unlocked}
               onClick={() => setLevel(l.level)}
             >
-              <b>{l.level}</b>
+              <b>{l.level > unlocked ? <GameIcon name="lock" className="inline" /> : l.level}</b>
               <span>{l.level > unlocked ? 'Locked' : l.name}</span>
             </button>
           ))}
