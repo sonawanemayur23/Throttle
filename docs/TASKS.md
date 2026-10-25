@@ -6,13 +6,11 @@ Status: `todo`, `doing`, `done`, `blocked`, `parked`.
 
 ## Next up
 
-State on 25 Oct 2026: Phase 1 done. Phase 2 features done, hosted on Vercel, comfort settings and music in, all 8 art prompts from Claude Design in the game. Phase 2 is not closed: the gate needs a week of Umami data, and P2-12, P2-15, P2-18 and P2-19 are open. Work in this order:
+State on 25 Oct 2026: Phase 1 done. Phase 2 features done, hosted on Vercel, analytics on Umami working, all 8 art prompts in the game, phone playtest fixes (P2-32 to P2-35) in. Phase 2 closes when the gate is met: a week of Umami data showing day 1 retention and races per day. Work in this order:
 
-1. **P2-13** Finish analytics: confirm a hosted race shows in Umami, save the retention and races-per-day reports.
-2. **P2-12** Phone performance on real devices, then **P2-15** auto quality if needed.
-3. **P2-30** Rider proportions (Mayur reruns the updated Prompt 2 first).
-4. **P2-18** Balance, once there is a week of analytics.
-5. **P2-19** Name and domain (Mayur). Phase 3 cannot launch publicly without it.
+1. **P2-12** Phone performance on real devices, then **P2-15** auto quality (can be built now).
+2. **P2-18** Balance, once there is a week of analytics.
+3. **P2-19** Name and domain (Mayur). Phase 3 cannot launch publicly without it.
 
 Each task below has a Why, a Do and a Done when. If a task is unclear, ask Mayur before building.
 
@@ -38,7 +36,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-10 | Guest save with versioning and save codes | done | Claude | P2-01 |
 | P2-11 | Test suite and CI | done | Claude | P2-01 |
 | P2-12 | Measure on low end phones; port renderer to PixiJS only if needed | todo | | P2-14 |
-| P2-13 | Analytics for the Phase 2 gate | doing | Cursor | P2-14 |
+| P2-13 | Analytics for the Phase 2 gate | done | Cursor | P2-14 |
 | P2-14 | Deploy the hosted build | done | Cursor | |
 | P2-15 | Auto quality setting for slow devices | todo | | P2-12 |
 | P2-16 | Settings: reduce motion, vibration toggle, key remapping | done | Cursor | |
@@ -55,8 +53,12 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-27 | Garage art, icons and title art from Prompts 7 and 8 | done | Claude | P2-23, art from Mayur |
 | P2-28 | Show upgrades on the garage bike again | done | Claude | P2-27 |
 | P2-29 | Sky polish: art-matched sky bands, stars and lamp glows | done | Claude | P2-26 |
-| P2-30 | Rider proportions: rerun the updated Prompt 2 | todo | Mayur, then any agent | P2-24 |
+| P2-30 | Rider proportions: rerun the updated Prompt 2 | done | Mayur | P2-24 |
 | P2-31 | Fix minimap directions and horizon drift on turns | done | Claude | |
+| P2-32 | Phone fight controls: punch and kick reachable with one or two thumbs | done | Claude | |
+| P2-33 | Game mode: full screen on phones, hides the browser bars | done | Claude | |
+| P2-34 | Loading screen: animated logo, 90s tagline, how-to-play tips | done | Claude | |
+| P2-35 | Upgrades: show what each level changes, celebrate the purchase | done | Claude | |
 
 ### P2-12. Measure on low end phones
 
@@ -200,6 +202,12 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 
 ## Notes
 
+- Phone playtest, 25 Oct 2026 (Mayur): steering is easier than before; punch and kick sat next to each other and could not be hit reliably; the browser bottom bar spoils the view; the game loads slowly with nothing to look at; upgrades do not say what they change. Analytics (P2-13) confirmed working. Tasks P2-32 to P2-35.
+- P2-30, Oct 2026: the rerun Prompt 2 file matched the rider art already in the game, file for file. Accepted as is.
+- P2-33, Oct 2026: game mode. Starting a race on a phone enters full screen (Fullscreen API, navigation UI hidden), from the same tap. Settings switch, on by default, save version 4. iPhone Safari cannot make pages full screen; iPhone players see an Add to Home Screen tip instead. Code in `src/app/gameMode.ts`.
+- P2-34, Oct 2026: inline loading screen in `index.html` (logo, 90s tagline, sunset road, rotating how-to-play tips). Fades once race art has decoded, between 1.4 and 6 seconds. Google Fonts no longer block the first paint.
+- P2-35, Oct 2026: each upgrade card names the current and next part and shows before and after numbers (`upgradeGains()` in `src/content/bikes.ts`); tap a card to preview on the meters; buying flashes the card, pops the bike and shows a level banner.
+- P2-32, Oct 2026: research basis: Apple HIG game controls (frequent buttons near the resting thumb, 44 pt minimum, clear press states, combine actions into one control). The right thumb now has one tall fight pad: kick on top (84 px), punch at the bottom where the thumb rests (104 px), 14 px apart, each about 38 percent of the screen wide. Holding a weapon turns the punch zone into the swing (green, with the weapon icon), so the separate weapon button is gone. Brake moved to a pill above the steering pad for the left thumb. Landscape phones put the two zones side by side.
 - P2-29, Oct 2026: each track's `palette.sky` now comes from the Prompt 6 sky gradients (stops at 0, 0.55, 1), sampled at the band stops 0, 0.45, 0.8 and 1. Coast and desert changed most (warmer lower sky on the coast, hazier blue on the desert). Stars already sit behind the city strips. Lamp glows were done in P2-26; traffic light and window glows were left out as not worth the frame cost.
 
 - P2-28, Oct 2026: option B (code, no new art). Each upgrade shows on the garage, title and career bike in its tier color: tyres get a colored sidewall ring, engine an underglow on the floor, armour an outline around the whole bike that thickens per level. Wheel positions per bike are in `WHEELS` in `src/ui/art/BikeArt.tsx`. Option A (overlay art from Claude Design) is still open if the look needs more.

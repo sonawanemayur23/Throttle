@@ -22,7 +22,7 @@ export class GameHost {
   private reported = false;
   private shownWeapon: string | null = null;
   private touchEl = document.getElementById('touch');
-  private weaponBtn = document.getElementById('weaponBtn');
+  private punchBtn = document.getElementById('punchBtn');
 
   onFinish: Listener<Results> | null = null;
   onPauseChange: Listener<boolean> | null = null;
@@ -162,7 +162,12 @@ export class GameHost {
     if (w === this.shownWeapon) return;
     this.shownWeapon = w;
     document.body.classList.toggle('has-weapon', !!w);
-    if (w && this.weaponBtn) setButtonIcon(this.weaponBtn, w, WEAPONS[w].label);
+    // Armed: the punch zone swings the weapon. Unarmed: back to punch.
+    if (this.punchBtn) {
+      this.punchBtn.dataset.btn = w ? 'weapon' : 'punch';
+      this.punchBtn.setAttribute('aria-label', w ? `Swing ${WEAPONS[w].label.toLowerCase()}` : 'Punch');
+      setButtonIcon(this.punchBtn, w ?? 'punch', w ? WEAPONS[w].label : 'PUNCH');
+    }
   }
 
   private frame = (now: number) => {

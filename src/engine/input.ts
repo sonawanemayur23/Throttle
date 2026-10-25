@@ -91,10 +91,12 @@ export class Input {
   /** Fight and brake buttons: one finger per button, multi-touch safe. */
   private bindButtons() {
     document.querySelectorAll<HTMLElement>('[data-btn]').forEach((el) => {
-      const b = el.dataset.btn as Btn;
+      // Read at press time: the punch zone swaps to 'weapon' while armed.
+      let b = el.dataset.btn as Btn;
       const active = new Set<number>();
       const down = (e: PointerEvent) => {
         e.preventDefault();
+        if (active.size === 0) b = el.dataset.btn as Btn;
         this.lastTouch = true;
         active.add(e.pointerId);
         if (!this.touchHeld.has(b)) this.pressed.add(b);

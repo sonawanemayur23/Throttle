@@ -82,17 +82,21 @@
     <!-- Touch controls and the top bar stay outside React: input binds to them
          once at start, and React re-renders never touch them. -->
     <div id="touch" class="hidden">
-      <div id="steerPad" aria-label="Steering pad. Hold left or right of center.">
-        <span class="arrow left">&#9664;</span>
-        <span class="knob"></span>
-        <span class="arrow right">&#9654;</span>
-        <span class="label">STEER</span>
+      <!-- Left thumb: steering, with brake just above it. Right thumb: one tall
+           fight pad, kick on top and punch below, as two big zones. Holding a
+           weapon turns the punch zone into a swing. -->
+      <div class="drive">
+        <button data-btn="down" class="b-brake" type="button" aria-label="Brake">BRAKE</button>
+        <div id="steerPad" aria-label="Steering pad. Hold left or right of center.">
+          <span class="arrow left">&#9664;</span>
+          <span class="knob"></span>
+          <span class="arrow right">&#9654;</span>
+          <span class="label">STEER</span>
+        </div>
       </div>
       <div class="fight">
-        <button data-btn="down" class="b-brake" type="button" aria-label="Brake">BRAKE</button>
-        <button data-btn="weapon" class="b-weapon" type="button" aria-label="Swing weapon" id="weaponBtn">CLUB</button>
         <button data-btn="kick" class="b-kick" type="button" aria-label="Kick">KICK</button>
-        <button data-btn="punch" class="b-punch" type="button" aria-label="Punch">PUNCH</button>
+        <button data-btn="punch" class="b-punch" type="button" aria-label="Punch" id="punchBtn">PUNCH</button>
       </div>
     </div>
 
