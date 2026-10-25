@@ -59,6 +59,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-33 | Game mode: full screen on phones, hides the browser bars | done | Claude | |
 | P2-34 | Loading screen: animated logo, 90s tagline, how-to-play tips | done | Claude | |
 | P2-35 | Upgrades: show what each level changes, celebrate the purchase | done | Claude | |
+| P2-36 | iPhone full screen: Add to Home Screen card for Safari and Chrome, turn-sideways tip | done | Claude | P2-33 |
 
 ### P2-12. Measure on low end phones
 
@@ -201,6 +202,8 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 | P4-09 | Launch: Product Hunt, Reddit, itch.io, CrazyGames, Poki | todo | P4-05 |
 
 ## Notes
+
+- P2-36, Oct 2026: iPhone browsers (Safari and Chrome, which must use Safari's engine) cannot make a page full screen; only video can. From the Home Screen the game opens full screen from the manifest, which Mayur confirmed on an iPhone 14 Pro. So in an iPhone browser tab a card explains Add to Home Screen, with steps for Safari (Share in the bottom bar, or behind the ... button) and for Chrome (Share in the address bar), and an arrow toward the Share button. It shows before the first race and once more after the third. The first two races in a portrait browser tab show a turn-sideways tip, since landscape shrinks the browser bars. Umami gets `app_open` (home screen or browser) and `install_card` (shown, closed) to see if it works. Code: `src/ui/InstallCard.tsx`, helpers in `src/app/gameMode.ts`, tests in `src/test/install.test.ts`.
 
 - P2-15, Oct 2026: auto quality. The host times frame gaps over the first 3 seconds of racing (after a 0.5 second settle, ignoring gaps over 1 second). If the median is over 18 ms it switches to low for good: draw distance 300 to 200 segments, 30 percent fewer canvas pixels (1.4 M to 0.98 M cap). Settings has Graphics: Auto, High, Low; picking Auto again re-measures. Save version 5 adds `quality` and `lowDetected`. `?slow` burns 25 ms a frame to test it. In the GPU-less test browser the median was 117 ms, so it switched to low and saved it.
 

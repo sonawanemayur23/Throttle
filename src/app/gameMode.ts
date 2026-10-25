@@ -58,3 +58,61 @@ export function exitGameMode() {
     /* already out */
   }
 }
+
+/** Which iPhone browser this is, for install steps. null when not iOS. */
+export function iosBrowser(): 'safari' | 'chrome' | 'other' | null {
+  if (!isIOS()) return null;
+  const ua = navigator.userAgent;
+  if (/CriOS/.test(ua)) return 'chrome';
+  if (/FxiOS|EdgiOS|OPiOS|DuckDuckGo/.test(ua)) return 'other';
+  return 'safari';
+}
+
+/** True on an iPhone or iPad browser tab, where only Add to Home Screen gives full screen. */
+export function needsHomeScreen() {
+  return isIOS() && isTouchDevice() && !isImmersive();
+}
+
+// Per-device memory for the install card and the turn-sideways tip. Browser
+// storage is fine here: losing it only shows a tip again.
+const read = (k: string) => {
+  try {
+    return localStorage.getItem(k);
+  } catch {
+    return null;
+  }
+};
+const write = (k: string, v: string) => {
+  try {
+    localStorage.setItem(k, v);
+  } catch {
+    /* private mode */
+  }
+};
+
+/**
+ * The install card shows twice at most: before the first race, and again
+ * after the third. Returns which showing is due, or null.
+ */
+export function installCardDue(races: number): 'first' | 'third' | null {
+  if (!needsHomeScreen()) return null;
+  const seen = read('throttle.installCard');
+  if (!seen) return races < 3 ? 'first' : 'third';
+  if (seen === 'first' && races >= 3) return 'third';
+  return null;
+}
+export const markInstallCard = (which: 'first' | 'third') => write('throttle.installCard', which);
+
+/** Turn-sideways tip: first two races in a portrait iPhone browser tab. */
+export function turnTipDue() {
+  if (!needsHomeScreen()) return false;
+  try {
+    if (!matchMedia('(orientation: portrait)').matches) return false;
+  } catch {
+    return false;
+  }
+  const n = Number(read('throttle.turnTip') ?? '0');
+  if (n >= 2) return false;
+  write('throttle.turnTip', String(n + 1));
+  return true;
+}

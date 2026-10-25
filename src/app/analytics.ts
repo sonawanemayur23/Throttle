@@ -6,7 +6,7 @@ export const UMAMI_WEBSITE_ID = 'a01ee3b2-350b-4f26-9af5-19ba2c6e37b1';
 export const UMAMI_SCRIPT = 'https://cloud.umami.is/script.js';
 const DEFAULT_HOST = 'https://gateway.umami.is';
 
-export type AnalyticsName = 'race_start' | 'race_end' | 'purchase' | 'level_unlock';
+export type AnalyticsName = 'race_start' | 'race_end' | 'purchase' | 'level_unlock' | 'app_open' | 'install_card';
 
 export interface AnalyticsEnv {
   mode: string;
