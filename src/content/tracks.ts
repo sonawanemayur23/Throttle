@@ -4,7 +4,8 @@
 export type SceneryKind = 'palm' | 'palm2' | 'rock' | 'sign' | 'bush' | 'tower' | 'cactus' | 'cactus2' | 'windmill' | 'pine' | 'deadpine' | 'logs' | 'cliff' | 'building' | 'shop' | 'lamp' | 'trafficlight' | 'busstop';
 
 export interface Palette {
-  sky: [string, string, string, string]; // top to horizon
+  /** Top to horizon, sampled from the Prompt 6 sky gradients (stops 0, 0.55, 1) at 0, 0.45, 0.8 and 1. */
+  sky: [string, string, string, string];
   sun: 'sun' | 'noon' | 'pale' | 'moon';
   ridges: [string, string, string]; // far to near
   skyline?: boolean; // draw city blocks instead of hills
@@ -43,7 +44,7 @@ export const TRACKS: TrackDef[] = [
     hills: 1,
     traffic: 1,
     palette: {
-      sky: ['#2b2257', '#b4506e', '#f08a5d', '#f6c08f'],
+      sky: ['#2b2257', '#9b486a', '#d57065', '#f08a5d'],
       sun: 'sun',
       ridges: ['#7d4a6e', '#a35a68', '#c8735f'],
       fog: '#f2b48a',
@@ -71,7 +72,7 @@ export const TRACKS: TrackDef[] = [
     hills: 1.5,
     traffic: 0.8,
     palette: {
-      sky: ['#2d5d9f', '#6fa3d1', '#f0d6a2', '#f7e3b8'],
+      sky: ['#2d5d9f', '#7d9bbd', '#c5c2b1', '#f0d6a2'],
       sun: 'noon',
       ridges: ['#a8643f', '#c27a4c', '#d99662'],
       fog: '#f2dcae',
@@ -99,7 +100,7 @@ export const TRACKS: TrackDef[] = [
     hills: 1.25,
     traffic: 0.9,
     palette: {
-      sky: ['#1e2f4a', '#4f6f8f', '#a9c2c9', '#d7e3df'],
+      sky: ['#1e2f4a', '#6b8495', '#afc1c6', '#d7e3df'],
       sun: 'pale',
       ridges: ['#2f4858', '#3f6070', '#55808a'],
       fog: '#c9d8d6',
@@ -127,7 +128,7 @@ export const TRACKS: TrackDef[] = [
     hills: 0.6,
     traffic: 1.5,
     palette: {
-      sky: ['#05060f', '#141a3a', '#2b2550', '#4b2d5c'],
+      sky: ['#05060f', '#1e1532', '#3a244d', '#4b2d5c'],
       sun: 'moon',
       ridges: ['#0d0f1f', '#151a33', '#1f2445'],
       skyline: true,
