@@ -58,6 +58,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-28 | Show upgrades on the garage bike again | todo | | P2-27 |
 | P2-29 | Sky polish: art-matched sky bands, stars and lamp glows | todo | | P2-26 |
 | P2-30 | Rider proportions: rerun the updated Prompt 2 | todo | Mayur, then any agent | P2-24 |
+| P2-31 | Fix minimap directions and horizon drift on turns | done | Claude | |
 
 ### P2-12. Measure on low end phones
 
@@ -200,6 +201,8 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 | P4-09 | Launch: Product Hunt, Reddit, itch.io, CrazyGames, Poki | todo | P4-05 |
 
 ## Notes
+
+- P2-31, Oct 2026: the minimap was north-up over the whole track, so a right bend looked like a left whenever the route headed down, and loops crossed. It is now heading-up: it shows the stretch around the rider (10 percent of the track), turned so the rider points up, with an arrow for the rider. The route's turn rate is softer (0.003 per curve unit). The horizon slid far too slowly on turns (the rate was scaled by frame time twice), and the sun and stars jumped across the screen when the offset went negative. The slide is now about 0.15 screen widths per second on a hard bend for the near strip, layers move at 0.3, 0.55 and 1, and the sun wraps outside the screen.
 
 - P2-17, Oct 2026: five original Web Audio loops (menu, plus one per highway), ducked under the engine, music slider in Settings, save version 2 so old saves gain a music level.
 - P2-14, Oct 2026: GitHub Pages could not publish because Actions is locked by a billing failure. The hosted build is on Vercel. The Pages workflow is removed.
