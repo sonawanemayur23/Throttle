@@ -112,6 +112,33 @@ export function Settings({ save, setSave, host, onBack }: Props) {
             </p>
           )
         )}
+        <div className="quality">
+          <span>Graphics</span>
+          <div className="choices" role="radiogroup" aria-label="Graphics quality">
+            {(['auto', 'high', 'low'] as const).map((q) => (
+              <button
+                key={q}
+                type="button"
+                role="radio"
+                aria-checked={save.settings.quality === q}
+                className={save.settings.quality === q ? 'on' : ''}
+                // Picking Auto again measures afresh.
+                onClick={() => setSave({ ...save, settings: { ...save.settings, quality: q, lowDetected: q === 'auto' ? false : save.settings.lowDetected } })}
+              >
+                {q === 'auto' ? 'Auto' : q === 'high' ? 'High' : 'Low'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="muted small">
+          {save.settings.quality === 'auto'
+            ? save.settings.lowDetected
+              ? 'Auto picked Low on this device for a smoother race.'
+              : 'Auto checks the first seconds of a race and drops to Low if this device is slow.'
+            : save.settings.quality === 'low'
+              ? 'Low draws less road and fewer pixels. Smoother on older phones.'
+              : 'High always, even if the race runs slower.'}
+        </p>
         <label className="switch" htmlFor="setHints">
           <span>Hints in the first 3 races</span>
           <input id="setHints" type="checkbox" checked={save.settings.hints} onChange={() => toggle('hints')} />

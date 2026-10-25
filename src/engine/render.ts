@@ -4,6 +4,7 @@ import {
   CAM_H,
   CAR_WORLD_W,
   DRAW_DIST,
+  DRAW_DIST_LOW,
   FOG_DENSITY,
   LANES,
   MAX_SPEED,
@@ -250,6 +251,20 @@ export class Renderer {
     this.resize();
   }
 
+  /** 'low' draws less road and fewer pixels, for slow devices (P2-15). */
+  get quality() {
+    return this.low ? 'low' : 'high';
+  }
+  set quality(q: 'high' | 'low') {
+    const low = q === 'low';
+    if (low === this.low) return;
+    this.low = low;
+    this.drawDist = low ? DRAW_DIST_LOW : DRAW_DIST;
+    this.resize();
+  }
+  private low = false;
+  private drawDist = DRAW_DIST;
+
   resize() {
     if (this.fixed) {
       this.canvas.width = this.fixed.width;
@@ -262,8 +277,9 @@ export class Renderer {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const cw = window.innerWidth;
     const ch = window.innerHeight;
-    // Cap the pixel count so mid range phones keep 60 fps.
-    const scale = Math.min(dpr, Math.sqrt(1_400_000 / (cw * ch)));
+    // Cap the pixel count so mid range phones keep 60 fps; 30 percent fewer in low quality.
+    const cap = this.low ? 980_000 : 1_400_000;
+    const scale = Math.min(dpr, Math.sqrt(cap / (cw * ch)));
     this.canvas.width = Math.round(cw * scale);
     this.canvas.height = Math.round(ch * scale);
     this.w = this.canvas.width;
@@ -333,7 +349,7 @@ export class Renderer {
     for (const b of this.buckets) b.length = 0;
     const bucketOf = (z: number) => {
       const n = mod(Math.floor(z / SEG_LEN) - base.index, segs.length);
-      return n >= 1 && n < DRAW_DIST ? n : -1;
+      return n >= 1 && n < this.drawDist ? n : -1;
     };
     for (const c of g.cars) {
       c.visible = false;
@@ -361,10 +377,10 @@ export class Renderer {
     let dx = -(base.curve * basePct);
     const camX = p.x * ROAD_W;
     const camY = playerY + CAM_H;
-    for (let n = 0; n < DRAW_DIST; n++) {
+    for (let n = 0; n < this.drawDist; n++) {
       const seg = segs[(base.index + n) % segs.length];
       const looped = seg.index < base.index;
-      const fog = 1 / Math.pow(Math.E, (n / DRAW_DIST) ** 2 * FOG_DENSITY);
+      const fog = 1 / Math.pow(Math.E, (n / this.drawDist) ** 2 * FOG_DENSITY);
       const cz = camZ - (looped ? L : 0);
       this.project(seg.p1, camX - x, camY, cz);
       this.project(seg.p2, camX - x - dx, camY, cz);
@@ -398,7 +414,7 @@ export class Renderer {
     if (this.night && g.phase !== 'title') this.headlight(py, pw);
 
     // Sprites and entities, back to front. The player slots in at its own depth.
-    for (let n = DRAW_DIST - 1; n > 0; n--) {
+    for (let n = this.drawDist - 1; n > 0; n--) {
       if (n < pBucket && !playerDrawn) drawPlayer();
       const seg = segs[(base.index + n) % segs.length];
       const s1 = seg.p1.screen;

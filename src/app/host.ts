@@ -18,6 +18,15 @@ export class GameHost {
   private paused = false;
   private hidden = false;
   private last = performance.now();
+
+  // Auto quality (P2-15): time the first 3 seconds of racing, and if the
+  // median frame takes longer than 18 ms, switch to low quality for good.
+  private autoQuality = false;
+  private samples: number[] = [];
+  private raceClock = 0;
+  /** Called once when auto quality decides this device needs low quality. */
+  onQualityDrop: (() => void) | null = null;
+  private readonly slowTest = new URLSearchParams(location.search).has('slow');
   private finishedAt = 0;
   private reported = false;
   private shownWeapon: string | null = null;
@@ -106,6 +115,15 @@ export class GameHost {
     this.input.setBindings(settings.keys);
   }
 
+  /**
+   * Graphics quality from Settings. 'auto' starts high and measures each race
+   * until it finds the device too slow; `lowDetected` remembers that it did.
+   */
+  applyQuality(choice: 'auto' | 'high' | 'low', lowDetected: boolean) {
+    this.autoQuality = choice === 'auto' && !lowDetected;
+    this.renderer.quality = choice === 'low' || (choice === 'auto' && lowDetected) ? 'low' : 'high';
+  }
+
   /** The next key press goes to Settings instead of the race. */
   listenForKey(fn: (code: string) => void) {
     this.input.listenForKey(fn);
@@ -135,6 +153,8 @@ export class GameHost {
     this.game.start(setup);
     this.showTouch();
     this.last = performance.now();
+    this.samples = [];
+    this.raceClock = 0;
   }
 
   setPaused(p: boolean) {
@@ -156,6 +176,24 @@ export class GameHost {
     if (this.input.lastTouch && this.racing && !this.paused) this.touchEl?.classList.remove('hidden');
   }
 
+  /** Collect frame gaps over the first 3 seconds of racing, then decide once. */
+  private measure(gap: number) {
+    if (!this.autoQuality || this.hidden || this.paused || this.game.phase !== 'race') return;
+    if (gap > 1000) return; // a tab switch or a long stall, not a frame
+    this.raceClock += gap;
+    if (this.raceClock < 500) return; // let the race settle first
+    this.samples.push(gap);
+    if (this.raceClock < 3500) return;
+    const sorted = [...this.samples].sort((a, b) => a - b);
+    const median = sorted[Math.floor(sorted.length / 2)] ?? 0;
+    this.autoQuality = false;
+    if (median > 18) {
+      this.renderer.quality = 'low';
+      this.onQualityDrop?.();
+    }
+    if (new URLSearchParams(location.search).has('debug')) console.log(`auto quality: median ${median.toFixed(1)} ms, ${this.renderer.quality}`);
+  }
+
   /** Keep the weapon button in step with what the player holds. */
   private syncWeapon() {
     const w = this.game.player.weapon;
@@ -171,8 +209,17 @@ export class GameHost {
   }
 
   private frame = (now: number) => {
-    const dt = Math.min(0.05, (now - this.last) / 1000);
+    const gap = now - this.last;
+    const dt = Math.min(0.05, gap / 1000);
     this.last = now;
+    if (this.slowTest) {
+      // ?slow: burn 25 ms a frame to test auto quality on a fast machine.
+      const until = performance.now() + 25;
+      while (performance.now() < until) {
+        /* busy */
+      }
+    }
+    this.measure(gap);
     this.input.poll();
     if (!this.hidden && !this.paused) {
       const was = this.game.phase;
