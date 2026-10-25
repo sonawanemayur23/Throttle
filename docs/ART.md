@@ -86,4 +86,4 @@ Until an image has loaded, `draw` returns false and the old code-drawn sprite is
 | Riders, 10 poses | Prompt 2 | All riders, repainted per rider |
 | Police, 3 poses | Prompt 3 | Police chases, light bar flashes |
 | Garage bikes (5 liveries) and parts (3 levels each) | Prompt 7 | Garage, title and career screens; files in `src/art/garage/`, loaded by `src/ui/art/garageArt.ts` |
-| Icons, title art | Prompt 8 | Not yet |
+| Icons (12), title scenes (wide and tall) | Prompt 8 | Touch and top bar buttons, results, locks, title screen; files in `src/art/ui/`, loaded by `src/app/uiArt.ts` |
