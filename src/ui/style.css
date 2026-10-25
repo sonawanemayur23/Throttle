@@ -1509,3 +1509,11 @@ textarea {
 .dare p {
   margin: 0;
 }
+
+/* Text fields must stay typeable and selectable: the page turns selection off for the game. */
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  touch-action: manipulation;
+}

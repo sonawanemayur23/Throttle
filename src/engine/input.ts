@@ -1,5 +1,17 @@
 export type Btn = 'left' | 'right' | 'up' | 'down' | 'punch' | 'kick' | 'weapon';
 
+
+/** True when a key press belongs to a text field, not the game. */
+export function isTyping(target: EventTarget | null): boolean {
+  const el = target as HTMLInputElement | null;
+  if (!el || typeof el.tagName !== 'string') return false;
+  const tag = el.tagName.toLowerCase();
+  if (tag === 'textarea' || el.isContentEditable === true) return true;
+  if (tag !== 'input') return false;
+  // Switches and sliders still let the game keys through; text boxes do not.
+  return !['checkbox', 'radio', 'range', 'button', 'submit'].includes((el.type || 'text').toLowerCase());
+}
+
 export const DEFAULT_KEYMAP: Record<string, Btn> = {
   ArrowLeft: 'left',
   KeyA: 'left',
@@ -43,6 +55,9 @@ export class Input {
     this.lastTouch = this.touch;
 
     window.addEventListener('keydown', (e) => {
+      // Typing in a text field (the challenge name box) is not game input:
+      // without this, A steered, Space started a race and M muted.
+      if (isTyping(e.target)) return;
       if (e.isTrusted) {
         this.lastTouch = false;
         document.body.classList.remove('touch');
@@ -71,6 +86,7 @@ export class Input {
       this.held.add(b);
     });
     window.addEventListener('keyup', (e) => {
+      if (isTyping(e.target)) return;
       const b = this.codeToBtn[e.code];
       if (b) this.held.delete(b);
     });
