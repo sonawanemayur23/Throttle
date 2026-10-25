@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { GameHost } from '../../app/host';
 import { DEFAULT_KEYS, RACE_ACTIONS, actionLabel, exportCode, importCode, keyLabel, newSave, rebind, type RaceAction, type SaveData } from '../../save/save';
 import { TopNav } from '../parts';
+import { canFullscreen, enterGameMode, exitGameMode, isIOS, isImmersive } from '../../app/gameMode';
 
 interface Props {
   save: SaveData;
@@ -36,8 +37,12 @@ export function Settings({ save, setSave, host, onBack }: Props) {
     return () => host.cancelListen();
   }, [host, listening, save, setSave]);
 
-  const toggle = (key: 'muted' | 'hints' | 'reduceMotion' | 'vibration') => {
+  const toggle = (key: 'muted' | 'hints' | 'reduceMotion' | 'vibration' | 'gameMode') => {
     const next = { ...save, settings: { ...save.settings, [key]: !save.settings[key] } };
+    if (key === 'gameMode') {
+      if (next.settings.gameMode) enterGameMode();
+      else exitGameMode();
+    }
     if (key === 'muted') host.setMuted(next.settings.muted);
     setSave(next);
   };
@@ -91,6 +96,22 @@ export function Settings({ save, setSave, host, onBack }: Props) {
           />
         </label>
         <p className="muted small">Original music, made for this game. Menus share a quieter track. Each highway has its own.</p>
+        {canFullscreen() ? (
+          <>
+            <label className="switch" htmlFor="setGameMode">
+              <span>Game mode</span>
+              <input id="setGameMode" type="checkbox" checked={save.settings.gameMode} onChange={() => toggle('gameMode')} />
+            </label>
+            <p className="muted small">Full screen while you play on a phone. Hides the browser bars. Swipe down or press back to leave it.</p>
+          </>
+        ) : (
+          isIOS() &&
+          !isImmersive() && (
+            <p className="muted small">
+              <b>Game mode on iPhone:</b> tap Share, then Add to Home Screen. The game then opens full screen, without the browser bars.
+            </p>
+          )
+        )}
         <label className="switch" htmlFor="setHints">
           <span>Hints in the first 3 races</span>
           <input id="setHints" type="checkbox" checked={save.settings.hints} onChange={() => toggle('hints')} />

@@ -6,7 +6,7 @@ import { LEVELS, QUALIFY_PLACE } from '../content/career';
 import { TRACKS } from '../content/tracks';
 
 export const SAVE_KEY = 'throttle.save';
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 export interface OwnedBike {
   upgrades: Record<UpgradeKind, number>;
@@ -103,6 +103,8 @@ export interface SaveData {
     /** No screen shake and no slow motion. */
     reduceMotion: boolean;
     vibration: boolean;
+    /** Full screen on phones while playing (version 4). */
+    gameMode: boolean;
     keys: Record<RaceAction, string[]>;
   };
   stats: { races: number; wins: number; kos: number; busted: number };
@@ -116,7 +118,7 @@ export function newSave(): SaveData {
     selectedBike: BIKES[0].id,
     career: {},
     bestScore: {},
-    settings: { muted: false, hints: true, music: 0.7, reduceMotion: false, vibration: true, keys: copyKeys(DEFAULT_KEYS) },
+    settings: { muted: false, hints: true, music: 0.7, reduceMotion: false, vibration: true, gameMode: true, keys: copyKeys(DEFAULT_KEYS) },
     stats: { races: 0, wins: 0, kos: 0, busted: 0 },
   };
 }
@@ -126,7 +128,7 @@ export function migrate(raw: unknown): SaveData {
   const fresh = newSave();
   if (!raw || typeof raw !== 'object') return fresh;
   const r = raw as Partial<SaveData>;
-  const prev = (r.settings ?? {}) as { music?: unknown; reduceMotion?: unknown; vibration?: unknown; keys?: unknown };
+  const prev = (r.settings ?? {}) as { music?: unknown; reduceMotion?: unknown; vibration?: unknown; gameMode?: unknown; keys?: unknown };
   const out: SaveData = {
     ...fresh,
     cash: Number.isFinite(r.cash) ? Math.max(0, Math.floor(r.cash as number)) : 0,
@@ -139,6 +141,7 @@ export function migrate(raw: unknown): SaveData {
       music: musicLevel(prev.music),
       reduceMotion: prev.reduceMotion === true,
       vibration: prev.vibration !== false,
+      gameMode: prev.gameMode !== false,
       keys: normalizeKeys(prev.keys),
     },
     stats: { ...fresh.stats, ...(r.stats ?? {}) },

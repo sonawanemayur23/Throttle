@@ -89,7 +89,7 @@ describe('save', () => {
     const s = migrate({ version: 1, cash: 80, settings: { muted: true, hints: false } });
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.cash).toBe(80);
-    expect(s.settings).toEqual({ muted: true, hints: false, music: 0.7, reduceMotion: false, vibration: true, keys: DEFAULT_KEYS });
+    expect(s.settings).toEqual({ muted: true, hints: false, music: 0.7, reduceMotion: false, vibration: true, gameMode: true, keys: DEFAULT_KEYS });
     expect(migrate({ settings: { music: 9 } }).settings.music).toBe(1);
     expect(migrate({ settings: { music: 0 } }).settings.music).toBe(0);
     expect(migrate({ settings: { music: 'loud' } }).settings.music).toBe(0.7);
@@ -110,6 +110,8 @@ describe('save', () => {
     const old = migrate({ version: 2, cash: 10, settings: { muted: false, hints: true, music: 0.4 } });
     expect(old.settings.reduceMotion).toBe(false);
     expect(old.settings.vibration).toBe(true);
+    expect(old.settings.gameMode).toBe(true);
+    expect(migrate({ version: 3, settings: { gameMode: false } }).settings.gameMode).toBe(false);
     expect(old.settings.music).toBe(0.4);
     expect(old.settings.keys).toEqual(DEFAULT_KEYS);
     const custom = migrate({
