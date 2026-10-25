@@ -55,8 +55,12 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-27 | Garage art, icons and title art from Prompts 7 and 8 | done | Claude | P2-23, art from Mayur |
 | P2-28 | Show upgrades on the garage bike again | done | Claude | P2-27 |
 | P2-29 | Sky polish: art-matched sky bands, stars and lamp glows | todo | | P2-26 |
-| P2-30 | Rider proportions: rerun the updated Prompt 2 | todo | Mayur, then any agent | P2-24 |
+| P2-30 | Rider proportions: rerun the updated Prompt 2 | done | Mayur | P2-24 |
 | P2-31 | Fix minimap directions and horizon drift on turns | done | Claude | |
+| P2-32 | Phone fight controls: punch and kick reachable with one or two thumbs | done | Claude | |
+| P2-33 | Game mode: full screen on phones, hides the browser bars | doing | Claude | |
+| P2-34 | Loading screen: animated logo, 90s tagline, how-to-play tips | doing | Claude | |
+| P2-35 | Upgrades: show what each level changes, celebrate the purchase | doing | Claude | |
 
 ### P2-12. Measure on low end phones
 
@@ -199,6 +203,10 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 | P4-09 | Launch: Product Hunt, Reddit, itch.io, CrazyGames, Poki | todo | P4-05 |
 
 ## Notes
+
+- Phone playtest, 25 Oct 2026 (Mayur): steering is easier than before; punch and kick sat next to each other and could not be hit reliably; the browser bottom bar spoils the view; the game loads slowly with nothing to look at; upgrades do not say what they change. Analytics (P2-13) confirmed working. Tasks P2-32 to P2-35.
+- P2-30, Oct 2026: the rerun Prompt 2 file matched the rider art already in the game, file for file. Accepted as is.
+- P2-32, Oct 2026: research basis: Apple HIG game controls (frequent buttons near the resting thumb, 44 pt minimum, clear press states, combine actions into one control). The right thumb now has one tall fight pad: kick on top (84 px), punch at the bottom where the thumb rests (104 px), 14 px apart, each about 38 percent of the screen wide. Holding a weapon turns the punch zone into the swing (green, with the weapon icon), so the separate weapon button is gone. Brake moved to a pill above the steering pad for the left thumb. Landscape phones put the two zones side by side.
 
 - P2-28, Oct 2026: option B (code, no new art). Each upgrade shows on the garage, title and career bike in its tier color: tyres get a colored sidewall ring, engine an underglow on the floor, armour an outline around the whole bike that thickens per level. Wheel positions per bike are in `WHEELS` in `src/ui/art/BikeArt.tsx`. Option A (overlay art from Claude Design) is still open if the look needs more.
 

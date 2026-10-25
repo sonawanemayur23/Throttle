@@ -623,7 +623,7 @@ export class Game {
     p.weaponUses = WEAPONS[w].uses;
     r.weapon = null;
     this.popup(`GOT ${WEAPONS[w].label}`, '#7dff9a', false);
-    this.showHint('weapon', this.touchText(`Tap the ${WEAPONS[w].label} button to swing it.`, `Press L to swing the ${WEAPONS[w].label.toLowerCase()}.`), 3.5);
+    this.showHint('weapon', this.touchText(`Tap the ${WEAPONS[w].label} zone to swing it.`, `Press L to swing the ${WEAPONS[w].label.toLowerCase()}.`), 3.5);
     this.sound.coin();
   }
 

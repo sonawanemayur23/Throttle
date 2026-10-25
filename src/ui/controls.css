@@ -77,90 +77,135 @@
   letter-spacing: 0.2em;
   color: rgba(255, 255, 255, 0.6);
 }
-.fight {
-  display: grid;
-  grid-template-columns: 68px 86px;
-  grid-template-rows: 68px 86px;
-  grid-template-areas:
-    'brake weapon'
-    'kick punch';
-  gap: 10px;
-  align-items: end;
-  justify-items: end;
+/* Left thumb: brake pill above the steering pad. */
+.drive {
+  flex: 1 1 auto;
+  max-width: 260px;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
   pointer-events: none;
 }
-.fight button {
+.drive #steerPad {
+  max-width: none;
+  min-width: 0;
+}
+
+/* Right thumb: one tall fight pad. Two big zones, kick on top and punch at the
+   bottom where the thumb rests, with a clear gap so a press never lands on
+   the wrong one. Sizes follow the 44 pt minimum with plenty to spare. */
+.fight {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: clamp(132px, 38vw, 200px);
+  pointer-events: none;
+}
+.fight button,
+.b-brake {
   appearance: none;
   pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0;
   border: 2px solid var(--line-strong);
   background: rgba(15, 10, 35, 0.42);
   color: #fff;
-  font: 900 13px/1 var(--display);
-  letter-spacing: 0.05em;
-  border-radius: 50%;
-  width: 68px;
-  height: 68px;
+  font: 900 15px/1 var(--display);
+  letter-spacing: 0.06em;
   touch-action: none;
-  transition: transform 0.06s, background 0.06s;
+  transition: transform 0.06s, background 0.06s, box-shadow 0.06s;
 }
-.fight button.on {
-  transform: scale(0.92);
+.fight button .ico,
+.b-brake .ico {
+  width: 40px;
+  height: 40px;
+  pointer-events: none;
 }
-.b-punch {
-  grid-area: punch;
-  width: 86px !important;
-  height: 86px !important;
-  border-color: var(--gold) !important;
-  color: var(--gold) !important;
-  font-size: 15px !important;
+.fight button span,
+.b-brake span {
+  pointer-events: none;
 }
-.b-punch.on {
-  background: rgba(255, 211, 77, 0.35) !important;
+.fight button.on,
+.b-brake.on {
+  transform: scale(0.96);
 }
 .b-kick {
-  grid-area: kick;
-  border-color: var(--coral) !important;
-  color: var(--coral) !important;
+  height: 84px;
+  border-radius: 22px 22px 12px 12px;
+  border-color: var(--coral);
+  color: var(--coral);
 }
 .b-kick.on {
-  background: rgba(255, 138, 92, 0.35) !important;
+  background: rgba(255, 138, 92, 0.38);
+  box-shadow: 0 0 18px rgba(255, 138, 92, 0.6);
 }
-.b-weapon {
-  grid-area: weapon;
-  justify-self: center;
-  border-color: var(--mint) !important;
-  color: var(--mint) !important;
-  visibility: hidden;
+.b-punch {
+  height: 104px;
+  border-radius: 12px 12px 26px 26px;
+  border-color: var(--gold);
+  color: var(--gold);
+  font-size: 17px;
 }
-body.has-weapon .b-weapon {
-  visibility: visible;
+.b-punch.on {
+  background: rgba(255, 211, 77, 0.38);
+  box-shadow: 0 0 18px rgba(255, 211, 77, 0.6);
 }
-.b-weapon.on {
-  background: rgba(125, 255, 154, 0.3) !important;
+/* Armed: the punch zone swings the weapon, in weapon green. */
+body.has-weapon .b-punch {
+  border-color: var(--mint);
+  color: var(--mint);
+}
+body.has-weapon .b-punch.on {
+  background: rgba(125, 255, 154, 0.32);
+  box-shadow: 0 0 18px rgba(125, 255, 154, 0.6);
 }
 .b-brake {
-  grid-area: brake;
-  align-self: center;
-  width: 54px !important;
-  height: 54px !important;
-  font-size: 10px !important;
+  align-self: flex-start;
+  height: 46px;
+  min-width: 108px;
+  padding: 0 14px;
+  border-radius: 23px;
+  font-size: 12px;
+}
+.b-brake .ico {
+  width: 30px;
+  height: 30px;
+}
+.b-brake.on {
+  background: rgba(255, 255, 255, 0.25);
 }
 @media (max-width: 380px) {
-  .fight {
-    grid-template-columns: 62px 78px;
-    grid-template-rows: 62px 78px;
-    gap: 8px;
+  .drive {
+    min-width: 130px;
   }
-  .fight button {
-    width: 62px;
-    height: 62px;
+  .b-kick {
+    height: 76px;
   }
   .b-punch {
-    width: 78px !important;
-    height: 78px !important;
+    height: 94px;
   }
-  #steerPad {
-    min-width: 130px;
+}
+/* Landscape phones: less height, so the pad goes side by side. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .fight {
+    flex-direction: row-reverse;
+    align-items: flex-end;
+    width: auto;
+  }
+  .b-punch {
+    width: 110px;
+    height: 110px;
+    border-radius: 26px;
+  }
+  .b-kick {
+    width: 92px;
+    height: 92px;
+    border-radius: 22px;
   }
 }
 
@@ -203,31 +248,7 @@ body:not(.racing) #topbar {
   display: none;
 }
 
-/* Prompt 8 icons inside the touch and top bar buttons. */
-.fight button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 1px;
-  padding: 0;
-}
-.fight button .ico {
-  width: 56%;
-  height: 56%;
-  pointer-events: none;
-}
-.fight button span {
-  font-size: 10px;
-  pointer-events: none;
-}
-.b-brake .ico {
-  width: 70%;
-  height: 70%;
-}
-.b-brake span {
-  display: none;
-}
+/* Prompt 8 icons inside the top bar buttons. */
 #topbar button {
   display: grid;
   place-items: center;
