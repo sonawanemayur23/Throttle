@@ -8,13 +8,75 @@
     <meta name="description" content="Race motorbikes, punch rivals off the road, outrun the police. Plays in the browser on phone and desktop." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@700;800;900&family=Saira:wght@400;600;700&display=swap" />
+    <!-- Fonts load without blocking the first paint, so the loading screen shows at once. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@700;800;900&family=Saira:wght@400;600;700&display=swap" media="print" onload="this.media='all'" />
+    <style>
+      /* Loading screen. Inline so it paints before the game code arrives. */
+      #boot { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 24px; text-align: center;
+        background: linear-gradient(180deg, #2b2257 0%, #6b2f63 52%, #f08a5d 100%); color: #fff; overflow: hidden;
+        font-family: 'Saira Condensed', 'Arial Narrow', system-ui, sans-serif; transition: opacity 0.45s ease; }
+      #boot.done { opacity: 0; pointer-events: none; }
+      #boot .sun { position: absolute; left: 50%; bottom: 22%; width: 46vmin; height: 23vmin; margin-left: -23vmin; border-radius: 23vmin 23vmin 0 0;
+        background: repeating-linear-gradient(180deg, #ffd36b 0 62%, transparent 62% 68%, #ffae5c 68% 80%, transparent 80% 85%, #ff7a59 85% 100%); opacity: 0.9; }
+      #boot .road { position: absolute; left: 0; right: 0; bottom: 0; height: 22%; background: #2b2c33; }
+      #boot .road::before { content: ''; position: absolute; left: 0; right: 0; top: 46%; height: 6px;
+        background: repeating-linear-gradient(90deg, #f2d36b 0 40px, transparent 40px 90px); animation: boot-road 0.5s linear infinite; }
+      @keyframes boot-road { to { background-position: -90px 0; } }
+      #boot .inner { position: relative; display: grid; gap: 14px; justify-items: center; margin-top: -18vh; }
+      #boot .eyebrow { font-weight: 800; font-size: 13px; letter-spacing: 0.32em; color: #ffd34d; }
+      #boot .logo { margin: 0; font-weight: 900; font-style: italic; font-size: clamp(52px, 15vw, 120px); line-height: 0.9; letter-spacing: -0.01em;
+        text-shadow: 0 5px 0 #c2577a, 0 14px 40px rgba(0, 0, 0, 0.5); animation: boot-in 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) both, boot-rev 1.6s 0.7s ease-in-out infinite; }
+      #boot .logo::before { content: ''; position: absolute; left: -30%; top: 42%; width: 26%; height: 5px; transform: skewX(-24deg);
+        background: linear-gradient(90deg, transparent, #ffd34d); animation: boot-streak 1.1s ease-in-out infinite; }
+      #boot .logo { position: relative; }
+      @keyframes boot-in { from { transform: translateX(-60vw) skewX(-12deg); opacity: 0; } to { transform: none; opacity: 1; } }
+      @keyframes boot-rev { 50% { transform: translateX(3px) skewX(-3deg); } }
+      @keyframes boot-streak { 0% { opacity: 0; transform: translateX(40px) skewX(-24deg); } 40% { opacity: 1; } 100% { opacity: 0; transform: translateX(-60px) skewX(-24deg); } }
+      #boot .tag { font-weight: 800; font-size: clamp(15px, 4.4vw, 22px); letter-spacing: 0.16em; text-transform: uppercase; }
+      #boot .bar { width: min(260px, 64vw); height: 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.35); overflow: hidden; }
+      #boot .bar i { display: block; height: 100%; width: 40%; border-radius: 4px; background: #ffd34d; animation: boot-bar 1.2s ease-in-out infinite; }
+      @keyframes boot-bar { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+      #boot .tip { min-height: 2.6em; max-width: 30ch; font-family: system-ui, sans-serif; font-size: 15px; line-height: 1.3; color: rgba(255, 255, 255, 0.92); transition: opacity 0.3s; }
+      #boot .tip b { color: #ffd34d; }
+      @media (prefers-reduced-motion: reduce) { #boot * { animation: none !important; } }
+    </style>
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icon.svg" />
     <!-- Umami is inserted here for the production build only. Dev, localhost, and the playtest file do not load it. -->
   </head>
   <body>
+    <div id="boot" role="status" aria-live="polite">
+      <div class="sun"></div>
+      <div class="road"></div>
+      <div class="inner">
+        <div class="eyebrow">90s ARCADE, BACK ON THE ROAD</div>
+        <h1 class="logo">THROTTLE</h1>
+        <div class="tag">Race. Punch. Kick. Win.</div>
+        <div class="bar"><i></i></div>
+        <p class="tip" id="bootTip"><b>Steer</b> with the left pad. The throttle is automatic.</p>
+      </div>
+    </div>
+    <script>
+      // How-to tips while the game loads. Plain script so it runs before the bundle.
+      (function () {
+        var tips = [
+          '<b>Steer</b> with the left pad. The throttle is automatic.',
+          '<b>Punch</b> and <b>kick</b> riders next to you off their bikes.',
+          'Knock out a rider holding a <b>club</b> or <b>chain</b> to take it.',
+          'From level 2 the <b>police</b> chase you. Get busted and you pay a fine.',
+          'Finish in the <b>top 3</b> on every track to unlock the next level.',
+          'Spend prize <b>cash</b> on engine, tyres and armour in the garage.',
+          'Near misses and knockout combos earn <b>bonus cash</b>.'
+        ];
+        var i = 0, el = document.getElementById('bootTip');
+        window.__bootTips = setInterval(function () {
+          i = (i + 1) % tips.length;
+          el.style.opacity = '0';
+          setTimeout(function () { el.innerHTML = tips[i]; el.style.opacity = '1'; }, 300);
+        }, 2600);
+      })();
+    </script>
     <canvas id="game"></canvas>
 
     <!-- Touch controls and the top bar stay outside React: input binds to them
