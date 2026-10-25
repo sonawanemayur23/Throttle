@@ -1,10 +1,11 @@
-import type { Screen } from "../App";
-import { bikeById } from "../../content/bikes";
-import { levelDef } from "../../content/career";
-import { unlockedLevel, type SaveData } from "../../save/save";
-import { IconBook, IconGear, IconWrench } from "../art/Icons";
-import { titleUrl } from "../../app/uiArt";
-import { money } from "../format";
+import type { Screen } from '../App';
+import { bikeById } from '../../content/bikes';
+import { levelDef } from '../../content/career';
+import { unlockedLevel, type SaveData } from '../../save/save';
+import { IconBook, IconGear, IconWrench } from '../art/Icons';
+import { titleUrl } from '../../app/uiArt';
+import { isIOS, isImmersive, isTouchDevice } from '../../app/gameMode';
+import { money } from '../format';
 
 export function Title({
   save,
@@ -39,6 +40,7 @@ export function Title({
               <span className="money">{money(save.cash)}</span>
             </div>
           )}
+          {isIOS() && isTouchDevice() && !isImmersive() && <p className="ios-tip">For full screen: tap Share, then Add to Home Screen.</p>}
           <div className="actions">
             <button
               type="button"

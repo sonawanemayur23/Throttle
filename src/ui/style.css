@@ -1157,6 +1157,12 @@ textarea {
   justify-items: center;
   width: 100%;
 }
+.ios-tip {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
 .title-top .tagline {
   color: #fff;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);

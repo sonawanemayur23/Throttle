@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { track as logPlay } from '../app/analytics';
 import type { GameHost } from '../app/host';
 import { raceSetup } from '../app/setup';
+import { enterGameMode, isTouchDevice } from '../app/gameMode';
 import { TRACKS } from '../content/tracks';
 import type { Results } from '../engine/game';
 import { loadSave, recordRace, unlockedLevel, writeSave, type SaveData } from '../save/save';
@@ -53,6 +54,8 @@ export function App({ host }: { host: GameHost }) {
       setTrackId(track);
       setPaused(false);
       setScreen('race');
+      // Game mode: full screen on phones. This runs inside the tap that starts the race.
+      if (saveRef.current.settings.gameMode && isTouchDevice()) enterGameMode();
       host.startRace(raceSetup(saveRef.current, lvl, track));
       logPlay('race_start', { track, level: lvl, bike: saveRef.current.selectedBike });
     },
