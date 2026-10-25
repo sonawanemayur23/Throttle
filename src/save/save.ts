@@ -6,7 +6,7 @@ import { LEVELS, QUALIFY_PLACE } from '../content/career';
 import { TRACKS } from '../content/tracks';
 
 export const SAVE_KEY = 'throttle.save';
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 7;
 
 export interface OwnedBike {
   upgrades: Record<UpgradeKind, number>;
@@ -114,6 +114,10 @@ export interface SaveData {
     keys: Record<RaceAction, string[]>;
   };
   stats: { races: number; wins: number; kos: number; busted: number };
+  /** Today's daily race (version 7). Resets when the UTC date changes. */
+  daily: { key: string; best: number | null; tries: number; bonusPaid: boolean };
+  /** Days in a row with at least one daily race finished (version 7). */
+  streak: { last: string; days: number; best: number };
 }
 
 export function newSave(): SaveData {
@@ -126,6 +130,8 @@ export function newSave(): SaveData {
     bestScore: {},
     settings: { muted: false, hints: true, music: 0.7, reduceMotion: false, vibration: true, gameMode: true, quality: 'auto', lowDetected: false, name: '', keys: copyKeys(DEFAULT_KEYS) },
     stats: { races: 0, wins: 0, kos: 0, busted: 0 },
+    daily: { key: '', best: null, tries: 0, bonusPaid: false },
+    streak: { last: '', days: 0, best: 0 },
   };
 }
 
@@ -154,6 +160,8 @@ export function migrate(raw: unknown): SaveData {
       keys: normalizeKeys(prev.keys),
     },
     stats: { ...fresh.stats, ...(r.stats ?? {}) },
+    daily: cleanDaily(r.daily),
+    streak: cleanStreak(r.streak),
     bikes: {},
   };
   for (const b of BIKES) {
@@ -239,6 +247,57 @@ export interface RaceRecord {
   score: number;
   /** A challenge race: cash and stats count, career places do not. */
   challenge?: boolean;
+}
+
+const isKey = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+function cleanDaily(v: unknown): SaveData['daily'] {
+  const d = (v ?? {}) as Partial<SaveData['daily']>;
+  return {
+    key: isKey(d.key) ? d.key : '',
+    best: typeof d.best === 'number' && d.best > 0 ? d.best : null,
+    tries: Number.isInteger(d.tries) ? Math.max(0, d.tries as number) : 0,
+    bonusPaid: d.bonusPaid === true,
+  };
+}
+
+function cleanStreak(v: unknown): SaveData['streak'] {
+  const s = (v ?? {}) as Partial<SaveData['streak']>;
+  const n = (x: unknown) => (Number.isInteger(x) ? Math.max(0, x as number) : 0);
+  return { last: isKey(s.last) ? s.last : '', days: n(s.days), best: n(s.best) };
+}
+
+/**
+ * Apply a finished daily race on top of the usual race record. `key` is the
+ * daily's UTC date; `prevKey` the day before, to keep or restart the streak.
+ * Returns the bonus paid now (first finish of the day) and whether it is a new best.
+ */
+export function recordDaily(s: SaveData, key: string, prevKey: string, time: number | null, bonus: number) {
+  const next = structuredCloneSafe(s);
+  if (next.daily.key !== key) next.daily = { key, best: null, tries: 0, bonusPaid: false };
+  next.daily.tries++;
+  let paid = 0;
+  let newBest = false;
+  if (time !== null) {
+    newBest = next.daily.best === null || time < next.daily.best;
+    if (newBest) next.daily.best = time;
+    if (!next.daily.bonusPaid) {
+      next.daily.bonusPaid = true;
+      paid = bonus;
+      next.cash += bonus;
+    }
+    if (next.streak.last !== key) {
+      next.streak.days = next.streak.last === prevKey ? next.streak.days + 1 : 1;
+      next.streak.last = key;
+      next.streak.best = Math.max(next.streak.best, next.streak.days);
+    }
+  }
+  return { save: next, paid, newBest };
+}
+
+/** Streak days still alive today: kept if the last daily was today or yesterday. */
+export function liveStreak(s: SaveData, key: string, prevKey: string) {
+  return s.streak.last === key || s.streak.last === prevKey ? s.streak.days : 0;
 }
 
 /** A rider name for challenge links: trimmed, at most 16 characters. */

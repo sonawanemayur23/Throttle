@@ -177,11 +177,11 @@ Goal: every player brings in at least one more. Gate: viral coefficient 0.5 or m
 | P3-02 | Challenge link: "beat my score" URL that loads the same track and the sender's ghost | done | P3-01 |
 | P3-03 | Auto clip: record the best knockout as a 5 second vertical video with MediaRecorder | todo | |
 | P3-04 | Share sheet: Web Share on phones, copy link on desktop, link preview image with score (share done; preview image needs P3-06) | doing | P3-02 |
-| P3-05 | Daily race: one seeded track for the world, resets at 00:00 UTC | todo | |
+| P3-05 | Daily race: one seeded track for the world, resets at 00:00 UTC | done | |
 | P3-06 | Backend: accounts (guest first, optional sign in), leaderboards, daily race results | todo | |
 | P3-07 | Global and friends leaderboards with replay checks for the top 100 | todo | P3-06 |
 | P3-08 | Cloud save sync, migrating the guest save | todo | P3-06 |
-| P3-09 | Daily streak with a small reward | todo | P3-05 |
+| P3-09 | Daily streak with a small reward (streak counted and shown; reward is the daily bonus) | doing | P3-05 |
 | P3-10 | Trademark check and domain before public launch | todo | P2-19 |
 
 ## Phase 4: Live multiplayer and launch
@@ -201,6 +201,8 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 | P4-09 | Launch: Product Hunt, Reddit, itch.io, CrazyGames, Poki | todo | P4-05 |
 
 ## Notes
+
+- P3-05, Oct 2026: daily race with no server. `dailyFor()` in `src/content/daily.ts` picks the track (each track once per 4 day block, never twice in a row) and a level from 1 to 3 from the UTC date, so everyone gets the same race; it changes at 00:00 UTC (05:30 IST). The title screen shows a Daily race card: track, level, time to reset, the player's best today and tries, the day streak, and the first-finish bonus ($500 per level, paid once a day). Daily races and challenges do not change career places and charge no fine when busted. Results show new best, bonus and streak; sharing sends a "beat my daily time" challenge link. Save version 7 adds `daily` and `streak`. Umami: `race_start` gets `mode` (career, daily, challenge) and `daily_end`. Not done: a world leaderboard for the daily (needs P3-06).
 
 - P2-19, Oct 2026: the name is **Throttle Bike**, at throttlebike.com (GoDaddy, DNS pointed at Vercel; the bare domain redirects to www). Browser title, Home Screen name, title and loading screens, install card, challenge messages, README and docs now say Throttle Bike; the "Prototype" label is gone. Code, repo and save keys keep `throttle`, so saves are untouched. Open Graph tags give shared links the name and description; a score image still needs P3-06.
 

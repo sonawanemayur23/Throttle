@@ -126,6 +126,8 @@ export interface RaceSetup {
   vibration?: boolean;
   /** A challenge: race this recording as a see-through ghost rider (P3-02). */
   ghost?: Ghost | null;
+  /** Daily races and challenges are about the time: the police still chase, but a bust costs no fine. */
+  noFine?: boolean;
 }
 
 export interface Results {
@@ -935,12 +937,12 @@ export class Game {
       prize,
       score: this.score,
       busted,
-      fine: busted ? level.fine : 0,
+      fine: busted && !this.setup.noFine ? level.fine : 0,
       ghostTime: this.ghost?.time,
     };
     if (busted) {
       this.player.speed = Math.min(this.player.speed, MAX_SPEED * 0.2);
-      this.popup('BUSTED', '#7fb8ff', true, `Fine $${level.fine.toLocaleString()}`);
+      this.popup('BUSTED', '#7fb8ff', true, this.setup.noFine ? 'No fine in this race' : `Fine $${level.fine.toLocaleString()}`);
       this.sound.crash();
     } else {
       this.popup(place === 1 ? 'YOU WIN' : 'FINISH', place === 1 ? '#ffd34d' : '#fff', true);

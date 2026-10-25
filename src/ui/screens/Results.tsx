@@ -32,14 +32,16 @@ export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage,
     if (!last.myGhost) return;
     const ghost = { ...last.myGhost, name: name.trim() };
     if (name !== save.settings.name) setName(name);
-    const how = await shareChallenge(ghost);
+    const how = await shareChallenge(ghost, !!daily);
     if (how === 'copied') setShareMsg('Link copied. Paste it to a friend.');
     else if (how === 'failed') setShareMsg('Could not share from this browser.');
     else setShareMsg(null);
     if (how === 'shared' || how === 'copied') logPlay('challenge_sent', { method: how, track: ghost.trackId, reply: vsGhost ? 1 : 0 });
   };
-  const qualified = !r.busted && r.place <= QUALIFY_PLACE;
-  const verdict = r.busted ? `Fined ${money(r.fine)}` : r.place === 1 ? 'You win' : qualified ? 'Qualified' : `Top ${QUALIFY_PLACE} to qualify`;
+  const daily = last.daily;
+  // Daily races are about the time, not the career: the main button is another try.
+  const qualified = !daily && !r.busted && r.place <= QUALIFY_PLACE;
+  const verdict = r.busted ? (r.fine > 0 ? `Fined ${money(r.fine)}` : 'No fine this time') : daily ? (r.place === 1 ? 'You win' : 'Daily race') : r.place === 1 ? 'You win' : qualified ? 'Qualified' : `Top ${QUALIFY_PLACE} to qualify`;
   return (
     <div className="scr center">
       <div className="wrap narrow results">
@@ -65,6 +67,17 @@ export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage,
               : beat
                 ? `You beat ${vsGhost.name || 'your friend'} by ${(r.ghostTime - r.time).toFixed(1)}s`
                 : `${vsGhost.name || 'Your friend'} was ${(r.time - r.ghostTime).toFixed(1)}s faster`}
+          </div>
+        )}
+        {daily && (
+          <div className={`banner daily-banner${daily.newBest ? ' won' : ''}`}>
+            {r.busted
+              ? 'Daily race: busted. Try again before the reset.'
+              : daily.newBest
+                ? `Daily race: new best ${formatTime(r.time)}`
+                : `Daily race: your best today is ${daily.best !== null ? formatTime(daily.best) : '-'}`}
+            {daily.paid > 0 && <span className="sub">+{money(daily.paid)} daily bonus</span>}
+            {daily.streak > 0 && !r.busted && <span className="sub">{daily.streak} day streak</span>}
           </div>
         )}
         {last.unlocked && <div className="banner">Level {last.unlocked} unlocked: {levelDef(last.unlocked).name}</div>}
