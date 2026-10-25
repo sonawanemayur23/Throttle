@@ -36,7 +36,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-10 | Guest save with versioning and save codes | done | Claude | P2-01 |
 | P2-11 | Test suite and CI | done | Claude | P2-01 |
 | P2-12 | Measure on low end phones; port renderer to PixiJS only if needed | todo | | P2-14 |
-| P2-13 | Analytics for the Phase 2 gate | doing | Cursor | P2-14 |
+| P2-13 | Analytics for the Phase 2 gate | done | Cursor | P2-14 |
 | P2-14 | Deploy the hosted build | done | Cursor | |
 | P2-15 | Auto quality setting for slow devices | todo | | P2-12 |
 | P2-16 | Settings: reduce motion, vibration toggle, key remapping | done | Cursor | |
