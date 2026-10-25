@@ -103,7 +103,24 @@ export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage,
             </div>
             <label className="dare-name">
               <span className="small muted">Your name on the link</span>
-              <input value={name} maxLength={16} placeholder="A friend" onChange={(e) => setNameDraft(e.target.value)} />
+              <input
+                value={name}
+                maxLength={16}
+                placeholder="A friend"
+                autoComplete="nickname"
+                autoCapitalize="words"
+                enterKeyHint="done"
+                onChange={(e) => setNameDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  // Done or Enter closes the keyboard and keeps the name; it never starts a race.
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setName(name);
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+                onBlur={() => name !== save.settings.name && setName(name)}
+              />
             </label>
             <button type="button" className="btn wide share" onClick={share}>
               Share challenge

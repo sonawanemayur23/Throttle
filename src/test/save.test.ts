@@ -149,3 +149,15 @@ describe('save', () => {
     expect(fromSave).toEqual(DEFAULT_KEYMAP);
   });
 });
+
+describe('typing is not game input', () => {
+  it('text boxes keep their keys; switches do not', async () => {
+    const { isTyping } = await import('../engine/input');
+    expect(isTyping({ tagName: 'INPUT', type: 'text' } as unknown as EventTarget)).toBe(true);
+    expect(isTyping({ tagName: 'INPUT', type: '' } as unknown as EventTarget)).toBe(true);
+    expect(isTyping({ tagName: 'TEXTAREA' } as unknown as EventTarget)).toBe(true);
+    expect(isTyping({ tagName: 'INPUT', type: 'checkbox' } as unknown as EventTarget)).toBe(false);
+    expect(isTyping({ tagName: 'BUTTON' } as unknown as EventTarget)).toBe(false);
+    expect(isTyping(null)).toBe(false);
+  });
+});
