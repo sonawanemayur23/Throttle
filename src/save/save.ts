@@ -6,7 +6,7 @@ import { LEVELS, QUALIFY_PLACE } from '../content/career';
 import { TRACKS } from '../content/tracks';
 
 export const SAVE_KEY = 'throttle.save';
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export interface OwnedBike {
   upgrades: Record<UpgradeKind, number>;
@@ -105,6 +105,10 @@ export interface SaveData {
     vibration: boolean;
     /** Full screen on phones while playing (version 4). */
     gameMode: boolean;
+    /** Graphics quality (version 5). 'auto' measures the device during races. */
+    quality: 'auto' | 'high' | 'low';
+    /** Auto quality found this device too slow and switched to low. */
+    lowDetected: boolean;
     keys: Record<RaceAction, string[]>;
   };
   stats: { races: number; wins: number; kos: number; busted: number };
@@ -118,7 +122,7 @@ export function newSave(): SaveData {
     selectedBike: BIKES[0].id,
     career: {},
     bestScore: {},
-    settings: { muted: false, hints: true, music: 0.7, reduceMotion: false, vibration: true, gameMode: true, keys: copyKeys(DEFAULT_KEYS) },
+    settings: { muted: false, hints: true, music: 0.7, reduceMotion: false, vibration: true, gameMode: true, quality: 'auto', lowDetected: false, keys: copyKeys(DEFAULT_KEYS) },
     stats: { races: 0, wins: 0, kos: 0, busted: 0 },
   };
 }
@@ -128,7 +132,7 @@ export function migrate(raw: unknown): SaveData {
   const fresh = newSave();
   if (!raw || typeof raw !== 'object') return fresh;
   const r = raw as Partial<SaveData>;
-  const prev = (r.settings ?? {}) as { music?: unknown; reduceMotion?: unknown; vibration?: unknown; gameMode?: unknown; keys?: unknown };
+  const prev = (r.settings ?? {}) as { music?: unknown; reduceMotion?: unknown; vibration?: unknown; gameMode?: unknown; quality?: unknown; lowDetected?: unknown; keys?: unknown };
   const out: SaveData = {
     ...fresh,
     cash: Number.isFinite(r.cash) ? Math.max(0, Math.floor(r.cash as number)) : 0,
@@ -142,6 +146,8 @@ export function migrate(raw: unknown): SaveData {
       reduceMotion: prev.reduceMotion === true,
       vibration: prev.vibration !== false,
       gameMode: prev.gameMode !== false,
+      quality: prev.quality === 'high' || prev.quality === 'low' ? prev.quality : 'auto',
+      lowDetected: prev.lowDetected === true,
       keys: normalizeKeys(prev.keys),
     },
     stats: { ...fresh.stats, ...(r.stats ?? {}) },

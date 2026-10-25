@@ -89,7 +89,7 @@ describe('save', () => {
     const s = migrate({ version: 1, cash: 80, settings: { muted: true, hints: false } });
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.cash).toBe(80);
-    expect(s.settings).toEqual({ muted: true, hints: false, music: 0.7, reduceMotion: false, vibration: true, gameMode: true, keys: DEFAULT_KEYS });
+    expect(s.settings).toEqual({ muted: true, hints: false, music: 0.7, reduceMotion: false, vibration: true, gameMode: true, quality: 'auto', lowDetected: false, keys: DEFAULT_KEYS });
     expect(migrate({ settings: { music: 9 } }).settings.music).toBe(1);
     expect(migrate({ settings: { music: 0 } }).settings.music).toBe(0);
     expect(migrate({ settings: { music: 'loud' } }).settings.music).toBe(0.7);
@@ -112,6 +112,10 @@ describe('save', () => {
     expect(old.settings.vibration).toBe(true);
     expect(old.settings.gameMode).toBe(true);
     expect(migrate({ version: 3, settings: { gameMode: false } }).settings.gameMode).toBe(false);
+    // Version 5: graphics quality, auto by default; unknown values fall back to auto.
+    expect(migrate({ version: 4, settings: {} }).settings.quality).toBe('auto');
+    expect(migrate({ version: 5, settings: { quality: 'low', lowDetected: true } }).settings).toMatchObject({ quality: 'low', lowDetected: true });
+    expect(migrate({ version: 5, settings: { quality: 'ultra' } }).settings.quality).toBe('auto');
     expect(old.settings.music).toBe(0.4);
     expect(old.settings.keys).toEqual(DEFAULT_KEYS);
     const custom = migrate({

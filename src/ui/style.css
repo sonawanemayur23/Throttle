@@ -1280,3 +1280,35 @@ textarea {
 @media (prefers-reduced-motion: reduce) {
   .hero-bike.pop, .part.just, .cheer { animation: none; }
 }
+
+/* Graphics quality picker in Settings (P2-15). */
+.quality {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0 4px;
+  font-weight: 600;
+}
+.quality .choices {
+  display: flex;
+  gap: 4px;
+}
+.quality .choices button {
+  appearance: none;
+  min-width: 58px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--text);
+  font: 800 14px/1 var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.quality .choices button.on {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--ink);
+}

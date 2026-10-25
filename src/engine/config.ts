@@ -6,6 +6,8 @@ export const LANES = 3;
 export const FOV = 100;
 export const CAM_H = 1000;
 export const DRAW_DIST = 300;
+/** Draw distance in low quality (auto quality on slow devices). */
+export const DRAW_DIST_LOW = 200;
 export const FOG_DENSITY = 5;
 export const CAM_DEPTH = 1 / Math.tan(((FOV / 2) * Math.PI) / 180);
 export const PLAYER_Z = CAM_H * CAM_DEPTH;

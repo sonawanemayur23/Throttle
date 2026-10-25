@@ -67,6 +67,11 @@ export function App({ host }: { host: GameHost }) {
     host.setMuted(saveRef.current.settings.muted);
     host.setMusicVolume(saveRef.current.settings.music);
     host.applyComfort(saveRef.current.settings);
+    host.applyQuality(saveRef.current.settings.quality, saveRef.current.settings.lowDetected);
+    host.onQualityDrop = () => {
+      const s = saveRef.current;
+      setSave({ ...s, settings: { ...s.settings, lowDetected: true } });
+    };
     host.attract(raceSetup(saveRef.current, 1, TRACKS[0].id));
     host.onPauseChange = setPaused;
     host.onMuteToggle = () => {
@@ -102,6 +107,10 @@ export function App({ host }: { host: GameHost }) {
   useEffect(() => {
     host.setMusicVolume(save.settings.music);
   }, [host, save.settings.music]);
+
+  useEffect(() => {
+    host.applyQuality(save.settings.quality, save.settings.lowDetected);
+  }, [host, save.settings.quality, save.settings.lowDetected]);
 
   useEffect(() => {
     host.applyComfort(save.settings);

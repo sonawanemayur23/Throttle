@@ -8,7 +8,7 @@ Status: `todo`, `doing`, `done`, `blocked`, `parked`.
 
 State on 25 Oct 2026: Phase 1 done. Phase 2 features done, hosted on Vercel, analytics on Umami working, all 8 art prompts in the game, phone playtest fixes (P2-32 to P2-35) in. Phase 2 closes when the gate is met: a week of Umami data showing day 1 retention and races per day. Work in this order:
 
-1. **P2-12** Phone performance on real devices, then **P2-15** auto quality (can be built now).
+1. **P2-12** Phone performance on real devices (auto quality, P2-15, is in; check it picks the right setting).
 2. **P2-18** Balance, once there is a week of analytics.
 3. **P2-19** Name and domain (Mayur). Phase 3 cannot launch publicly without it.
 
@@ -38,7 +38,7 @@ Goal: give players a reason to come back tomorrow. Gate: day 1 retention 35 perc
 | P2-12 | Measure on low end phones; port renderer to PixiJS only if needed | todo | | P2-14 |
 | P2-13 | Analytics for the Phase 2 gate | done | Cursor | P2-14 |
 | P2-14 | Deploy the hosted build | done | Cursor | |
-| P2-15 | Auto quality setting for slow devices | todo | | P2-12 |
+| P2-15 | Auto quality setting for slow devices | done | Claude | P2-12 |
 | P2-16 | Settings: reduce motion, vibration toggle, key remapping | done | Cursor | |
 | P2-17 | Original music loop and engine sound polish | done | Cursor | |
 | P2-18 | Balance pass from playtest data | todo | | P2-13 |
@@ -201,6 +201,8 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 | P4-09 | Launch: Product Hunt, Reddit, itch.io, CrazyGames, Poki | todo | P4-05 |
 
 ## Notes
+
+- P2-15, Oct 2026: auto quality. The host times frame gaps over the first 3 seconds of racing (after a 0.5 second settle, ignoring gaps over 1 second). If the median is over 18 ms it switches to low for good: draw distance 300 to 200 segments, 30 percent fewer canvas pixels (1.4 M to 0.98 M cap). Settings has Graphics: Auto, High, Low; picking Auto again re-measures. Save version 5 adds `quality` and `lowDetected`. `?slow` burns 25 ms a frame to test it. In the GPU-less test browser the median was 117 ms, so it switched to low and saved it.
 
 - Phone playtest, 25 Oct 2026 (Mayur): steering is easier than before; punch and kick sat next to each other and could not be hit reliably; the browser bottom bar spoils the view; the game loads slowly with nothing to look at; upgrades do not say what they change. Analytics (P2-13) confirmed working. Tasks P2-32 to P2-35.
 - P2-30, Oct 2026: the rerun Prompt 2 file matched the rider art already in the game, file for file. Accepted as is.
