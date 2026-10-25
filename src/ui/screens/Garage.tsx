@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { track } from '../../app/analytics';
 import type { Screen } from '../App';
-import { BIKES, MAX_UPGRADE, STOCK, UPGRADE_INFO, UPGRADE_KINDS, bikeStats, upgradeCost, type UpgradeKind } from '../../content/bikes';
+import { BIKES, MAX_UPGRADE, STOCK, UPGRADE_INFO, UPGRADE_KINDS, bikeStats, upgradeCost, upgradeGains, type UpgradeKind } from '../../content/bikes';
 import { buyBike, buyUpgrade, type SaveData } from '../../save/save';
 import { BikeArt } from '../art/BikeArt';
 import { PartArt } from '../art/PartArt';
@@ -30,6 +30,13 @@ export function Garage({ save, setSave, back }: Props) {
   const [viewId, setViewId] = useState(save.selectedBike);
   const [hover, setHover] = useState<UpgradeKind | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  // The upgrade just bought: drives the celebration banner and glow for a moment.
+  const [cheer, setCheer] = useState<{ kind: UpgradeKind; level: number; line: string; n: number } | null>(null);
+  useEffect(() => {
+    if (!cheer) return;
+    const t = setTimeout(() => setCheer(null), 2600);
+    return () => clearTimeout(t);
+  }, [cheer]);
   const bike = BIKES.find((b) => b.id === viewId) ?? BIKES[0];
   const owned = save.bikes[bike.id];
   const up = owned?.upgrades ?? STOCK;
@@ -61,7 +68,15 @@ export function Garage({ save, setSave, back }: Props) {
             <div className="eyebrow klass">{bike.klass}</div>
             <h3 className="bike-name display">{bike.name}</h3>
             <span className={`tag${owned ? ' owned' : ' price'}`}>{riding ? 'Riding' : owned ? 'Owned' : money(bike.price)}</span>
-            <BikeArt key={bike.id} className="hero-bike" bikeId={bike.id} color={bike.color} upgrades={up} stage title={bike.name} />
+            <BikeArt key={bike.id + (cheer ? cheer.n : '')} className={`hero-bike${cheer ? ' pop' : ''}`} bikeId={bike.id} color={bike.color} upgrades={up} stage title={bike.name} />
+            {cheer && (
+              <div className={`cheer t${cheer.level}`} role="status" key={cheer.n}>
+                <b className="display">
+                  {UPGRADE_INFO[cheer.kind].label} level {cheer.level}
+                </b>
+                <span>{cheer.line}</span>
+              </div>
+            )}
             <p className="muted small" style={{ margin: '0 0 8px' }}>
               {bike.blurb}
             </p>
@@ -100,19 +115,36 @@ export function Garage({ save, setSave, back }: Props) {
                   const maxed = lvl >= MAX_UPGRADE;
                   const cost = maxed ? 0 : upgradeCost(bike, lvl + 1);
                   const short = !maxed && save.cash < cost;
+                  const info = UPGRADE_INFO[k];
+                  const gains = maxed ? [] : upgradeGains(bike, up, k);
                   return (
                     <div
                       key={k}
-                      className="part"
-                      onPointerEnter={() => setHover(k)}
-                      onPointerLeave={() => setHover(null)}
+                      className={`part${hover === k ? ' sel' : ''}${cheer?.kind === k ? ' just' : ''}`}
+                      onPointerEnter={(e) => e.pointerType === 'mouse' && setHover(k)}
+                      onPointerLeave={(e) => e.pointerType === 'mouse' && setHover(null)}
+                      onClick={() => setHover(k)}
                       onFocus={() => setHover(k)}
                       onBlur={() => setHover(null)}
                     >
                       <PartArt kind={k} level={lvl} />
                       <div>
-                        <h4>{UPGRADE_INFO[k].label}</h4>
-                        <p>{UPGRADE_INFO[k].effect}</p>
+                        <h4>{info.label}</h4>
+                        <p className="now">{info.parts[lvl]}</p>
+                        {maxed ? (
+                          <p className="next">Fully upgraded.</p>
+                        ) : (
+                          <p className="next">
+                            <span className="lbl">Next: {info.parts[lvl + 1]}</span>
+                            {gains.map((g) => (
+                              <span className="gain" key={g.label}>
+                                {g.label} {g.from}
+                                {g.unit} <i>&rarr;</i> <b>{g.to}{g.unit}</b>
+                              </span>
+                            ))}
+                          </p>
+                        )}
+                        {hover === k && <p className="feel">{info.feel}</p>}
                         <div className="pips" aria-label={`Level ${lvl} of ${MAX_UPGRADE}`}>
                           {Array.from({ length: MAX_UPGRADE }, (_, i) => (
                             <i key={i} className={i < lvl ? `t${i + 1}` : ''} />
@@ -124,7 +156,26 @@ export function Garage({ save, setSave, back }: Props) {
                         className={`buy${short ? ' short' : ''}`}
                         disabled={maxed}
                         aria-label={maxed ? `${UPGRADE_INFO[k].label} fully upgraded` : `Upgrade ${UPGRADE_INFO[k].label} for ${money(cost)}`}
-                        onClick={() => act(buyUpgrade(save, bike.id, k), { item: `${bike.id}-${k}`, price: cost })}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const r = buyUpgrade(save, bike.id, k);
+                          act(r, { item: `${bike.id}-${k}`, price: cost });
+                          if (r.ok) {
+                            const first = gains[0];
+                            const diff = first ? first.to - first.from : 0;
+                            setCheer({
+                              kind: k,
+                              level: lvl + 1,
+                              line: `${info.parts[lvl + 1]}${first ? `. ${first.label} ${diff > 0 ? '+' : ''}${diff}${first.unit}` : ''}`,
+                              n: Date.now(),
+                            });
+                            try {
+                              if (save.settings.vibration) navigator.vibrate?.([18, 40, 28]);
+                            } catch {
+                              /* not allowed */
+                            }
+                          }
+                        }}
                       >
                         {maxed ? 'Max' : money(cost)}
                       </button>

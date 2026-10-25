@@ -29,11 +29,37 @@ export const BIKES: BikeDef[] = [
   { id: 'nightjar', name: 'Nightjar R', klass: 'Hypersport 1200cc', blurb: 'The top of the line. Fast everywhere.', price: 95000, speed: 1.16, accel: 1.2, handling: 1.12, armour: 1.15, color: '#5b2a9e', upgradeBase: 11000 },
 ];
 
-export const UPGRADE_INFO: Record<UpgradeKind, { label: string; effect: string }> = {
-  engine: { label: 'Engine', effect: '+3% top speed and +5% acceleration per level' },
-  tyres: { label: 'Tyres', effect: '+8% grip per level, less slowdown off the road' },
-  armour: { label: 'Armour', effect: '+15% health and 8% less damage per level' },
+export const UPGRADE_INFO: Record<UpgradeKind, { label: string; effect: string; feel: string; parts: [string, string, string, string] }> = {
+  engine: {
+    label: 'Engine',
+    effect: '+3% top speed and +5% acceleration per level',
+    feel: 'Pull away on the straights and get back up to speed after a crash.',
+    // Part names for levels 0 to 3, matching the Prompt 7 part art.
+    parts: ['Stock block', 'Free-flow pipe', 'Pod filter and sport pipe', 'Turbo and carbon race can'],
+  },
+  tyres: {
+    label: 'Tyres',
+    effect: '+8% grip per level, less slowdown off the road',
+    feel: 'Hold tighter lines in the bends and lose less speed on the dirt.',
+    parts: ['Stock tread', 'Road tread', 'Sport tread', 'Race slicks'],
+  },
+  armour: {
+    label: 'Armour',
+    effect: '+15% health and 8% less damage per level',
+    feel: 'Take more punches, kicks and crashes before you go down.',
+    parts: ['Riding jacket', 'Padded jacket', 'Back protector', 'Armoured race suit'],
+  },
 };
+
+/** What one more level of a part changes, as before and after numbers players can read. */
+export function upgradeGains(bike: BikeDef, up: Record<UpgradeKind, number>, kind: UpgradeKind) {
+  const now = bikeStats(bike, up);
+  const next = bikeStats(bike, { ...up, [kind]: Math.min(MAX_UPGRADE, up[kind] + 1) });
+  const row = (label: string, a: number, b: number, unit = '') => ({ label, from: Math.round(a), to: Math.round(b), unit });
+  if (kind === 'engine') return [row('Top speed', now.topSpeed * 250, next.topSpeed * 250, ' km/h'), row('Accel', now.accel * 100, next.accel * 100)];
+  if (kind === 'tyres') return [row('Grip', now.handling * 100, next.handling * 100), row('Off-road', now.offroadGrip * 100, next.offroadGrip * 100, '%')];
+  return [row('Health', now.hp, next.hp), row('Damage taken', now.damageTaken * 100, next.damageTaken * 100, '%')];
+}
 
 const LEVEL_COST = [1, 2.2, 4];
 
