@@ -31,6 +31,7 @@ import {
 } from './sprites';
 import type { Pt, Segment, Sprite } from './track';
 import { SpriteCache } from './art';
+import { ghostAt, ghostGap } from './ghost';
 import { ART, PROP_SCALE, svgArt, type ArtName } from './svgart';
 
 const NAMES = Object.keys(ART) as ArtName[];
@@ -121,6 +122,21 @@ const SKY_BODY: Partial<Record<Palette['sun'], { art: ArtName; size: number; y: 
   moon: { art: 'sky-moon', size: 0.12, y: 0.17 },
 };
 const OUTLINE = '#14101F';
+/** The challenge ghost: pale cyan, drawn half see-through, never fighting. */
+const GHOST_LOOK = {
+  bike: '#a0f0ff',
+  jacket: '#a0f0ff',
+  helmet: '#ffffff',
+  lean: 0,
+  punch: 0,
+  kick: 0,
+  side: 1,
+  tumble: 0,
+  down: false,
+  flash: 0,
+  weapon: null,
+  swing: 0,
+} as const;
 const PLAYER_JACKET = '#2b2f3a';
 const PLAYER_HELMET = '#f2f2f2';
 import { hex, lerp, mix, mod, mulberry32, ordinal, type RGB } from './util';
@@ -204,7 +220,8 @@ type Drawable =
   | { kind: 'sprite'; s: Sprite }
   | { kind: 'car'; c: Car }
   | { kind: 'rival'; r: Rival }
-  | { kind: 'cop'; c: Cop };
+  | { kind: 'cop'; c: Cop }
+  | { kind: 'ghost'; d: number; x: number };
 
 export class Renderer {
   private ctx: CanvasRenderingContext2D;
@@ -214,6 +231,8 @@ export class Renderer {
   kx = 0;
   private skyOffset = 0;
   private parts: Particle[] = [];
+  /** Screen spot of the ghost, filled in by drawEntity. */
+  private ghostPos: ScreenPos = { sx: 0, sy: 0, sw: 0, visible: false } as ScreenPos;
   private buckets: Drawable[][] = Array.from({ length: DRAW_DIST }, () => []);
   private ridges: number[][];
   private stars: Array<[number, number, number]> = [];
@@ -364,6 +383,12 @@ export class Renderer {
       const n = bucketOf(mod(r.d, L));
       if (n > 0 && n >= pBucketEarly - 1) this.buckets[n].push({ kind: 'rival', r });
     }
+    // The challenge ghost: a see-through rider where the recording says it was.
+    if (g.ghost && g.phase !== 'title') {
+      const gp = ghostAt(g.ghost, g.phase === 'countdown' ? 0 : g.raceTime);
+      const n = bucketOf(mod(gp.d, L));
+      if (n > 0 && n >= pBucketEarly - 1) this.buckets[n].push({ kind: 'ghost', d: gp.d, x: gp.x });
+    }
     const cop = g.cop;
     cop.visible = false;
     if (cop.active && g.phase !== 'title') {
@@ -433,7 +458,18 @@ export class Renderer {
             drawRider(ctx, ex, ey, ew, { ...this.look(c, '#eef1f6', '#eef1f6'), jacket: '#1f3a7a', cop: true, time: g.clock, night: this.night }),
           );
         }
-        else if (d.kind === 'rival') {
+        else if (d.kind === 'ghost') {
+          this.drawEntity(seg, this.ghostPos, mod(d.d, L), d.x, BIKE_WORLD_W, fogA, (ex, ey, ew) => {
+            ctx.save();
+            ctx.globalAlpha *= 0.5;
+            drawRider(ctx, ex, ey, ew, { ...GHOST_LOOK, night: this.night });
+            ctx.restore();
+            if (ew > 16) {
+              const name = (g.ghost?.name || 'GHOST').toUpperCase();
+              this.text(name, ex, ey - ew * 1.85, Math.max(10, ew * 0.22), 'rgba(160,240,255,0.95)', 'center', 900);
+            }
+          });
+        } else if (d.kind === 'rival') {
           const r = d.r;
           this.drawEntity(seg, r, mod(r.d, L), r.x, BIKE_WORLD_W, fogA, (ex, ey, ew) => drawRider(ctx, ex, ey, ew, { ...this.look(r, r.color, r.helmet), night: this.night }));
           if (r.visible && !r.down && r.sw > 18 && r.hp < 100) this.hpPip(r);
@@ -568,6 +604,7 @@ export class Renderer {
       ctx.fill();
     };
     for (const r of g.rivals) blip(r.d, r.down ? 'rgba(255,255,255,0.4)' : r.color, dot);
+    if (g.ghost) blip(ghostAt(g.ghost, g.raceTime).d, 'rgba(160,240,255,0.95)', dot * 1.15);
     if (g.cop.active && !g.cop.down) blip(g.cop.d, Math.floor(g.clock * 6) % 2 ? '#ff3b3b' : '#4a7dff', dot * 1.2);
     ctx.restore();
 
@@ -1226,6 +1263,12 @@ export class Renderer {
     for (let i = 1; i < 10; i++) ctx.fillRect(pad + (hw * i) / 10 - 1, hy, 2, u * 1.6);
 
     this.weaponSlot(g, pad, hy + u * 2.6, u);
+    // Challenge: how far ahead or behind the ghost, in seconds.
+    if (g.ghost && g.phase === 'race') {
+      const gap = ghostGap(g.ghost, g.player.d, g.raceTime);
+      const ahead = gap < 0;
+      this.text(`GHOST ${ahead ? '-' : '+'}${Math.abs(gap).toFixed(1)}s`, pad, hy + u * 9.6, u * 2.6, ahead ? '#7dff9a' : '#ff8a5c', 'left', 900);
+    }
 
     // Police warning while they chase from behind.
     const cop = g.cop;

@@ -1,4 +1,5 @@
 import type { BikeStats } from '../content/bikes';
+import { GhostRecorder, type Ghost } from './ghost';
 import type { LevelDef } from '../content/career';
 import type { TrackDef } from '../content/tracks';
 import type { Sound } from './audio';
@@ -123,6 +124,8 @@ export interface RaceSetup {
   /** No screen shake and no slow motion. */
   reduceMotion?: boolean;
   vibration?: boolean;
+  /** A challenge: race this recording as a see-through ghost rider (P3-02). */
+  ghost?: Ghost | null;
 }
 
 export interface Results {
@@ -138,6 +141,8 @@ export interface Results {
   score: number;
   busted: boolean;
   fine: number;
+  /** In a challenge: the ghost's finish time, to compare with `time`. */
+  ghostTime?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -289,7 +294,13 @@ export class Game {
     this.tutorial = setup.tutorial;
     this.reduceMotion = setup.reduceMotion === true;
     this.vibration = setup.vibration !== false;
+    this.ghost = setup.ghost ?? null;
   }
+
+  /** The ghost being raced, if this is a challenge. */
+  ghost: Ghost | null = null;
+  /** This race's own recording, for sending a challenge after the finish. */
+  readonly recorder = new GhostRecorder();
 
   private buzz(p: number | number[]) {
     if (!this.vibration) return;
@@ -342,6 +353,7 @@ export class Game {
       c.speed = MAX_SPEED * (lo + Math.random() * (hi - lo));
     }
     this.raceTime = 0;
+    this.recorder.reset();
     this.combo = 0;
     this.comboT = 0;
     this.topCombo = 0;
@@ -459,6 +471,7 @@ export class Game {
       if (this.comboT <= 0) this.combo = 0;
     }
     this.updatePlayer(dt);
+    this.recorder.sample(this.raceTime, this.player.d, this.player.x);
     this.updateRivals(dt);
     this.updateCop(dt);
     this.updateTraffic(dt);
@@ -923,6 +936,7 @@ export class Game {
       score: this.score,
       busted,
       fine: busted ? level.fine : 0,
+      ghostTime: this.ghost?.time,
     };
     if (busted) {
       this.player.speed = Math.min(this.player.speed, MAX_SPEED * 0.2);

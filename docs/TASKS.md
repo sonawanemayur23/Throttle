@@ -174,10 +174,10 @@ Goal: every player brings in at least one more. Gate: viral coefficient 0.5 or m
 
 | ID | Task | Status | Depends on |
 | --- | --- | --- | --- |
-| P3-01 | Ghost recording: store the player's inputs or positions per race, compact format | todo | |
-| P3-02 | Challenge link: "beat my score" URL that loads the same track and the sender's ghost | todo | P3-01 |
+| P3-01 | Ghost recording: store the player's inputs or positions per race, compact format | done | |
+| P3-02 | Challenge link: "beat my score" URL that loads the same track and the sender's ghost | done | P3-01 |
 | P3-03 | Auto clip: record the best knockout as a 5 second vertical video with MediaRecorder | todo | |
-| P3-04 | Share sheet: Web Share on phones, copy link on desktop, link preview image with score | todo | P3-02 |
+| P3-04 | Share sheet: Web Share on phones, copy link on desktop, link preview image with score (share done; preview image needs P3-06) | doing | P3-02 |
 | P3-05 | Daily race: one seeded track for the world, resets at 00:00 UTC | todo | |
 | P3-06 | Backend: accounts (guest first, optional sign in), leaderboards, daily race results | todo | |
 | P3-07 | Global and friends leaderboards with replay checks for the top 100 | todo | P3-06 |
@@ -202,6 +202,8 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 | P4-09 | Launch: Product Hunt, Reddit, itch.io, CrazyGames, Poki | todo | P4-05 |
 
 ## Notes
+
+- P3-01, P3-02, P3-04 (part), Oct 2026: "Beat my time" challenge links with no server. Every race records the player's road position and lane 4 times a second (`src/engine/ghost.ts`). A finished race packs into a short code (about 0.9 KB for a 85 second race: track, level, bike, time, place, rider name, then 2 bytes a sample) that travels in the link's hash (`#c=`), so it never reaches a server. Opening a link shows a challenge card; the friend races at the sender's level on their own bike against a see-through cyan ghost with the sender's name, a GHOST +/- seconds gap under the health bar, and a ghost dot on the minimap. Results say who won by how much, with "Send it back". Every finished race offers "Challenge a friend": the phone's share sheet, or copy the link on desktop. A name field sets the name on the link (save version 6, `settings.name`). Challenge races pay cash and count in stats but do not change career places. Umami: `challenge_sent`, `challenge_open`, `challenge_result`. Not done: a link preview image with the score (needs a server, P3-06).
 
 - P2-36, Oct 2026: iPhone browsers (Safari and Chrome, which must use Safari's engine) cannot make a page full screen; only video can. From the Home Screen the game opens full screen from the manifest, which Mayur confirmed on an iPhone 14 Pro. So in an iPhone browser tab a card explains Add to Home Screen, with steps for Safari (Share in the bottom bar, or behind the ... button) and for Chrome (Share in the address bar), and an arrow toward the Share button. It shows before the first race and once more after the third. The first two races in a portrait browser tab show a turn-sideways tip, since landscape shrinks the browser bars. Umami gets `app_open` (home screen or browser) and `install_card` (shown, closed) to see if it works. Code: `src/ui/InstallCard.tsx`, helpers in `src/app/gameMode.ts`, tests in `src/test/install.test.ts`.
 
