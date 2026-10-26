@@ -18,6 +18,7 @@ import { Pause } from './screens/Pause';
 import { ResultsScreen } from './screens/Results';
 import { Settings } from './screens/Settings';
 import { Title } from './screens/Title';
+import type { MomentSet } from './MomentsBox';
 
 export type Screen = 'title' | 'career' | 'garage' | 'help' | 'settings' | 'race' | 'results' | 'challenge';
 
@@ -36,6 +37,8 @@ export interface LastRace {
 }
 
 export function App({ host }: { host: GameHost }) {
+  // Share Moments of the last race, once its aftermath is filmed.
+  const [moments, setMoments] = useState<MomentSet | null>(null);
   const [save, setSaveState] = useState<SaveData>(loadSave);
   // A "Beat my time" link opens on the challenge card.
   const [incoming, setIncoming] = useState<Ghost | null>(challengeFromUrl);
@@ -72,6 +75,7 @@ export function App({ host }: { host: GameHost }) {
     (lvl: number, track: string, ghost: Ghost | null = null, daily: DailyRace | null = null) => {
       raceGhost.current = ghost;
       raceDaily.current = daily;
+      setMoments(null);
       // Challenges and the daily run at their own level; the career stays where it was.
       if (!ghost && !daily) {
         setLevel(lvl);
@@ -107,6 +111,7 @@ export function App({ host }: { host: GameHost }) {
       host.setMuted(next.settings.muted);
       setSave(next);
     };
+    host.onMoments = (list, scene) => setMoments({ list, scene });
     host.onFinish = (r) => {
       const s = saveRef.current;
       const prevBest = s.bestScore[r.trackId] ?? 0;
@@ -287,6 +292,7 @@ export function App({ host }: { host: GameHost }) {
         <ResultsScreen
           last={last}
           save={save}
+          moments={moments}
           onAgain={() => {
             if (last.daily) {
               // A new UTC day may have started since; race whatever is today's.

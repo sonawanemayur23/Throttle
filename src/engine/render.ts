@@ -241,6 +241,8 @@ export class Renderer {
   private night = false;
   private cache = new SpriteCache();
   private vignette: HTMLCanvasElement | null = null;
+  /** Filming a replay for a Share Moment: the race picture only, no HUD. */
+  cinematic = false;
   /** Flat sky band colors, top to horizon, for the current track. */
   private bands: string[] = [];
   private lines: Array<{ a: number; r: number; len: number; speed: number }> = [];
@@ -489,6 +491,8 @@ export class Renderer {
       ctx.fillStyle = `rgba(${g.flashColor},${g.flash * 0.5})`;
       ctx.fillRect(0, 0, w, h);
     }
+    // Share Moments draw their own captions: no HUD, popups or hints on film.
+    if (this.cinematic) return;
     if (g.phase === 'race' || g.phase === 'countdown' || g.phase === 'finished') this.hud(g);
     this.popups(g);
     if (g.phase === 'countdown') this.countdown(g);
