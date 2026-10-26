@@ -4,6 +4,7 @@
 
 import { Sound } from '../engine/audio';
 import { setButtonIcon } from './uiArt';
+import { ClipRecorder, clipsSupported, type Clip } from './clip';
 import { Game, WEAPONS, type RaceSetup, type Results } from '../engine/game';
 import { Input, type Btn } from '../engine/input';
 import { Renderer } from '../engine/render';
@@ -24,6 +25,19 @@ export class GameHost {
   private autoQuality = false;
   private samples: number[] = [];
   private raceClock = 0;
+  /** Highlight clips: on when the browser can record and the phone is fast enough. */
+  private clip: ClipRecorder | null = clipsSupported() ? new ClipRecorder() : null;
+  clipsOn = true;
+  /** True while a race's highlight is still being recorded or written. */
+  get recordingClip() {
+    return !!this.clip?.active;
+  }
+  /** The live audio, for mixing music into a clip. */
+  get audioContext() {
+    return this.sound.audioContext;
+  }
+  /** The race's best moment as a video, a moment after the results appear. */
+  onClip: ((clip: Clip | null) => void) | null = null;
   /** Called once when auto quality decides this device needs low quality. */
   onQualityDrop: (() => void) | null = null;
   private readonly slowTest = new URLSearchParams(location.search).has('slow');
@@ -38,7 +52,10 @@ export class GameHost {
   onMuteToggle: (() => void) | null = null;
   onConfirm: (() => void) | null = null;
 
-  constructor(canvas: HTMLCanvasElement, attract: RaceSetup) {
+  constructor(
+    private canvas: HTMLCanvasElement,
+    attract: RaceSetup,
+  ) {
     this.renderer = new Renderer(canvas);
     this.game = new Game(this.sound, this.input, attract);
     if (this.input.touch) document.body.classList.add('touch');
@@ -141,6 +158,7 @@ export class GameHost {
     this.sound.engine(0, false);
     this.sound.siren(0);
     this.sound.playMusic('menu');
+    void this.clip?.end();
     this.game.setAttract(setup);
   }
 
@@ -155,6 +173,9 @@ export class GameHost {
     this.last = performance.now();
     this.samples = [];
     this.raceClock = 0;
+    // Recording costs frame time, so slow phones (low quality) skip it.
+    if (this.clip && this.clipsOn && this.renderer.quality === 'high') this.clip.begin(performance.now() / 1000, this.sound.gameAudioStream());
+    else void this.clip?.end();
   }
 
   setPaused(p: boolean) {
@@ -194,6 +215,15 @@ export class GameHost {
     if (new URLSearchParams(location.search).has('debug')) console.log(`auto quality: median ${median.toFixed(1)} ms, ${this.renderer.quality}`);
   }
 
+  /** Knockouts and crashes are the moments worth a clip. Bigger combos rank higher. */
+  private spotHighlights(t: number) {
+    if (!this.clip?.active || this.game.phase !== 'race') return;
+    for (const e of this.game.events) {
+      if (e.kind === 'ko') this.clip.highlight(3 + Math.min(this.game.combo, 6), 'KNOCKOUT', t);
+      else if (e.kind === 'dust') this.clip.highlight(2, 'WIPEOUT', t);
+    }
+  }
+
   /** Keep the weapon button in step with what the player holds. */
   private syncWeapon() {
     const w = this.game.player.weapon;
@@ -224,7 +254,12 @@ export class GameHost {
     if (!this.hidden && !this.paused) {
       const was = this.game.phase;
       this.game.update(dt);
-      if (this.game.phase === 'finished' && was !== 'finished') this.finishedAt = now;
+      if (this.game.phase === 'finished' && was !== 'finished') {
+        this.finishedAt = now;
+        const r = this.game.results;
+        if (r) this.clip?.highlight(r.busted ? 4 : r.place === 1 ? 5 : 1, r.busted ? 'BUSTED' : r.place === 1 ? 'WIN' : 'FINISH', now / 1000);
+      }
+      this.spotHighlights(now / 1000);
       if (this.game.phase === 'finished' && !this.reported && now - this.finishedAt > 1600 && this.game.results) {
         this.reported = true;
         document.body.classList.remove('racing');
@@ -233,9 +268,12 @@ export class GameHost {
         this.sound.siren(0);
         this.sound.playMusic('menu');
         this.onFinish?.(this.game.results);
+        // The clip needs a moment to finish writing; the results screen picks it up.
+        if (this.clip?.active) void this.clip.end().then((c) => this.onClip?.(c));
       }
       this.syncWeapon();
       this.renderer.render(this.game, dt);
+      if (this.clip?.active) this.clip.frame(this.canvas, now / 1000);
     }
     requestAnimationFrame(this.frame);
   };

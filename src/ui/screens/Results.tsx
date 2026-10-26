@@ -4,6 +4,7 @@ import { trackById } from '../../content/tracks';
 import type { SaveData } from '../../save/save';
 import { formatTime, money, ordinal } from '../format';
 import { Fact } from '../parts';
+import { ClipBox } from '../ClipBox';
 import { useState } from 'react';
 import { shareChallenge } from '../../app/challenge';
 import { track as logPlay } from '../../app/analytics';
@@ -18,11 +19,13 @@ interface Props {
   onGarage: () => void;
   /** Save the rider name shown on challenge links. */
   setName: (name: string) => void;
+  /** The live audio, for mixing music into a highlight clip. */
+  audio: () => AudioContext | null;
 }
 
 const suffix = (n: number) => ordinal(n).slice(String(n).length);
 
-export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage, setName }: Props) {
+export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage, setName, audio }: Props) {
   const r = last.results;
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [name, setNameDraft] = useState(save.settings.name);
@@ -107,6 +110,8 @@ export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage,
         <div className="small muted">
           {last.newBest ? 'New best on this track. ' : ''}Cash now {money(last.cashAfter)}
         </div>
+
+        {last.clip && <ClipBox clip={last.clip} trackId={r.trackId} audio={audio} />}
 
         {last.myGhost && (
           <div className="dare">

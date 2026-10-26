@@ -5,6 +5,8 @@ export class Sound {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
   private musicOut: GainNode | null = null;
+  private comp: DynamicsCompressorNode | null = null;
+  private tap: MediaStreamAudioDestinationNode | null = null;
   private music = new MusicBed();
   private engOsc1: OscillatorNode | null = null;
   private engOsc2: OscillatorNode | null = null;
@@ -80,6 +82,7 @@ export class Sound {
     comp.attack.value = 0.003;
     comp.release.value = 0.15;
     comp.connect(ctx.destination);
+    this.comp = comp;
     this.master = ctx.createGain();
     this.master.gain.value = this.muted ? 0 : 0.9;
     this.master.connect(comp);
@@ -127,6 +130,23 @@ export class Sound {
     const t = this.ctx.currentTime;
     if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.9, t, 0.02);
     if (this.musicOut) this.musicOut.gain.setTargetAtTime(m ? 0 : 1, t, 0.02);
+  }
+
+  /** The live audio context, once sound has started. Highlight clips mix music into it. */
+  get audioContext() {
+    return this.ctx;
+  }
+
+  /** Everything the player hears (effects and music) as a stream, for highlight clips. */
+  gameAudioStream(): MediaStream | null {
+    const ctx = this.ctx;
+    if (!ctx || !this.comp || !this.musicOut || typeof ctx.createMediaStreamDestination !== 'function') return null;
+    if (!this.tap) {
+      this.tap = ctx.createMediaStreamDestination();
+      this.comp.connect(this.tap);
+      this.musicOut.connect(this.tap);
+    }
+    return this.tap.stream;
   }
 
   /** Music level 0..1. 0 leaves the bike audible and drops the loop. */

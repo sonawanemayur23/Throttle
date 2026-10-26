@@ -175,7 +175,7 @@ Goal: every player brings in at least one more. Gate: viral coefficient 0.5 or m
 | --- | --- | --- | --- |
 | P3-01 | Ghost recording: store the player's inputs or positions per race, compact format | done | |
 | P3-02 | Challenge link: "beat my score" URL that loads the same track and the sender's ghost | done | P3-01 |
-| P3-03 | Auto clip: record the best knockout as a 5 second vertical video with MediaRecorder | todo | |
+| P3-03 | Auto clip: record the best knockout as a 5 second vertical video with MediaRecorder | done | |
 | P3-04 | Share sheet: Web Share on phones, copy link on desktop, link preview image with score (share done; preview image needs P3-06) | doing | P3-02 |
 | P3-05 | Daily race: one seeded track for the world, resets at 00:00 UTC | done | |
 | P3-06 | Backend: accounts (guest first, optional sign in), leaderboards, daily race results | todo | |
@@ -201,6 +201,8 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 | P4-09 | Launch: Product Hunt, Reddit, itch.io, CrazyGames, Poki | todo | P4-05 |
 
 ## Notes
+
+- P3-03, Oct 2026: highlight clips, all on the phone, nothing uploaded (`src/app/clip.ts`, `src/app/clipExport.ts`, `src/ui/ClipBox.tsx`). During a race two MediaRecorders run on a 540 x 960 copy of the game view (upright phones show the whole screen with side bars, wide screens are cropped to the middle), restarted every 12 seconds and staggered by 6, so a knockout, crash, bust or win always has 5 seconds before it. The best moment of the race is kept (bigger combos rank higher). Results show the clip; the player picks Race sound, one of the 4 highway beats, or No sound, taps Make my clip (about 10 seconds, it replays and re-records with the chosen sound), then Share to Status / Story (phone share sheet with the file) or Save video. Two taps on purpose: phones only open the share sheet straight after a tap. MP4 (H.264) where the browser records it, else WebM. Every clip carries THROTTLEBIKE.COM. Recording only runs in high quality, so slow phones skip it. Umami: `clip_made`, `clip_shared`.
 
 - Analytics fix, Oct 2026: Umami showed every visit twice (one session with the pageview, one with the game event), because game events were sent with our player id and the pageview without. The tracker now gets the id up front (`data-distinct-id`), and game events go through `umami.track` when the tracker is loaded, so a visit is one session and day 1 return can be measured. Only throttlebike.com and www.throttlebike.com count (`data-domains`, `GAME_DOMAINS`). First day of data: apart from Mayur, the visitors came from data centre towns (Ashburn, Boardman, Council Bluffs, San Jose) with no races: bots and link preview fetchers. A real player is a session with `race_start`.
 

@@ -237,6 +237,15 @@ export class MusicBed {
     this.tick();
   }
 
+  /** Stop scheduling and disconnect. Used by the extra music bed that scores a highlight clip. */
+  detach() {
+    if (this.timer !== null) clearInterval(this.timer);
+    this.timer = null;
+    if (this.dropTimer) clearTimeout(this.dropTimer);
+    this.duck?.disconnect();
+    this.ctx = null;
+  }
+
   /** User music level, 0 (off) to 1. */
   setVolume(v: number) {
     this.volume = Math.min(1, Math.max(0, v));

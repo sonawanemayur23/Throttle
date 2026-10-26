@@ -7,6 +7,7 @@ import { InstallCard } from './InstallCard';
 import { ChallengeScreen } from './screens/Challenge';
 import { challengeFromUrl, clearChallengeUrl } from '../app/challenge';
 import type { Ghost } from '../engine/ghost';
+import type { Clip } from '../app/clip';
 import { dailyFor, dayBefore, type DailyRace } from '../content/daily';
 import { TRACKS } from '../content/tracks';
 import type { Results } from '../engine/game';
@@ -31,6 +32,8 @@ export interface LastRace {
   myGhost?: Ghost;
   /** The ghost this race was against, if it was a challenge. */
   challenge?: Ghost;
+  /** The race's best moment as a video: 'pending' while it is being written. */
+  clip?: Clip | 'pending' | null;
   /** Set when this was the daily race. */
   daily?: { race: DailyRace; best: number | null; paid: number; newBest: boolean; streak: number };
 }
@@ -107,6 +110,7 @@ export function App({ host }: { host: GameHost }) {
       host.setMuted(next.settings.muted);
       setSave(next);
     };
+    host.onClip = (clip) => setLast((prev) => (prev && prev.clip === 'pending' ? { ...prev, clip } : prev));
     host.onFinish = (r) => {
       const s = saveRef.current;
       const prevBest = s.bestScore[r.trackId] ?? 0;
@@ -138,7 +142,7 @@ export function App({ host }: { host: GameHost }) {
       const myGhost: Ghost | undefined = r.busted
         ? undefined
         : { trackId: r.trackId, level: r.level, bikeId: s.selectedBike, time: r.time, place: r.place, name: s.settings.name, d: [...rec.d], x: [...rec.x] };
-      setLast({ results: r, earnings: r.score, unlocked, cashAfter: next.cash, newBest: r.score > prevBest, myGhost, challenge: vs ?? undefined, daily: dailyInfo });
+      setLast({ results: r, earnings: r.score, unlocked, cashAfter: next.cash, newBest: r.score > prevBest, myGhost, challenge: vs ?? undefined, daily: dailyInfo, clip: host.recordingClip ? 'pending' : null });
       if (vs) logPlay('challenge_result', { won: !r.busted && r.time < vs.time ? 1 : 0, track: r.trackId });
       logPlay('race_end', { place: r.place, time: Math.round(r.time * 10) / 10, busted: r.busted ? 1 : 0, kos: r.kos + r.copKos });
       if (unlocked) {
@@ -296,6 +300,7 @@ export function App({ host }: { host: GameHost }) {
             else race(level, trackId);
           }}
           onNext={nextTrack}
+          audio={() => host.audioContext}
           setName={(name) => setSave({ ...saveRef.current, settings: { ...saveRef.current.settings, name: cleanName(name) } })}
           onCareer={() => setScreen('career')}
           onGarage={() => {

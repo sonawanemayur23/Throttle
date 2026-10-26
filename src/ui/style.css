@@ -1580,3 +1580,92 @@ textarea {
   font-size: 14px;
   font-style: normal;
 }
+
+/* ---- Highlight clips (P3-03) ---- */
+.clipbox {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  background: rgba(255, 211, 77, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(255, 211, 77, 0.5);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  text-align: left;
+}
+.clip-head {
+  display: grid;
+  gap: 2px;
+}
+.clipbox b.display {
+  font-size: 22px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.clip-body {
+  display: grid;
+  grid-template-columns: 112px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.clip-video {
+  width: 112px;
+  aspect-ratio: 9 / 16;
+  background: #000;
+  border-radius: 8px;
+  object-fit: cover;
+}
+.clip-side {
+  display: grid;
+  gap: 6px;
+}
+.clip-sounds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.clip-sounds button {
+  appearance: none;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 17px;
+  background: transparent;
+  color: var(--text);
+  font: 700 13px/1 var(--body);
+  cursor: pointer;
+}
+.clip-sounds button.on {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--ink);
+}
+.clip-actions {
+  display: grid;
+  gap: 8px;
+}
+.clipbox .share {
+  background: var(--gold);
+  color: var(--ink);
+}
+.clip-progress {
+  position: relative;
+  height: 44px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.clip-progress i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgba(255, 211, 77, 0.35);
+  transition: width 0.2s linear;
+}
+.clip-progress span {
+  position: relative;
+  font-weight: 700;
+}
+.clipbox p {
+  margin: 0;
+}
