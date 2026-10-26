@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PLAYER_KEY, UMAMI_SCRIPT, UMAMI_WEBSITE_ID, analyticsAllowed, buildPayload, hostedAnalytics, playerId, sendAnalytics, umamiHeadScript, type AnalyticsEnv, type PageInfo } from '../app/analytics';
 
 const page: PageInfo = {
-  hostname: 'throttle.vercel.app',
+  hostname: 'www.throttlebike.com',
   language: 'en-US',
   referrer: '',
   screen: '390x844',
@@ -14,7 +14,7 @@ const live: AnalyticsEnv = {
   mode: 'production',
   websiteId: '11111111-1111-4111-8111-111111111111',
   endpointHost: 'https://gateway.umami.is',
-  hostname: 'throttle.vercel.app',
+  hostname: 'www.throttlebike.com',
 };
 
 function store() {
@@ -39,7 +39,9 @@ describe('analytics', () => {
     const tag = umamiHeadScript();
     expect(tag).toContain(UMAMI_SCRIPT);
     expect(tag).toContain(`data-website-id', '${UMAMI_WEBSITE_ID}'`);
-    expect(tag).toContain("host === 'localhost'");
+    expect(tag).toContain('throttlebike.com');
+    expect(tag).toContain('data-distinct-id');
+    expect(tag).toContain('data-domains');
   });
 
   it('stays quiet in dev, the playtest file, localhost, and without a website id', () => {
@@ -49,6 +51,9 @@ describe('analytics', () => {
     expect(analyticsAllowed({ ...live, mode: 'test' })).toBe(false);
     expect(analyticsAllowed({ ...live, hostname: 'localhost' })).toBe(false);
     expect(analyticsAllowed({ ...live, hostname: '127.0.0.1' })).toBe(false);
+    // Only the real domain counts: the old Vercel address and previews do not.
+    expect(analyticsAllowed({ ...live, hostname: 'throttle-kappa.vercel.app' })).toBe(false);
+    expect(analyticsAllowed({ ...live, hostname: 'throttlebike.com' })).toBe(true);
     expect(analyticsAllowed({ ...live, websiteId: '  ' })).toBe(false);
   });
 
