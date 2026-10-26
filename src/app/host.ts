@@ -7,6 +7,8 @@ import { setButtonIcon } from './uiArt';
 import { Game, WEAPONS, type RaceSetup, type Results } from '../engine/game';
 import { Input, type Btn } from '../engine/input';
 import { Renderer } from '../engine/render';
+import { MomentTracker, type Moment } from '../engine/replay';
+import type { Scene } from './film';
 
 type Listener<T> = (v: T) => void;
 
@@ -34,6 +36,10 @@ export class GameHost {
   private punchBtn = document.getElementById('punchBtn');
 
   onFinish: Listener<Results> | null = null;
+  /** Share Moments: the race's best moments, a few seconds after the finish. */
+  onMoments: ((moments: Moment[], scene: Scene) => void) | null = null;
+  private tracker = new MomentTracker();
+  private momentsSent = true;
   onPauseChange: Listener<boolean> | null = null;
   onMuteToggle: (() => void) | null = null;
   onConfirm: (() => void) | null = null;
@@ -135,6 +141,7 @@ export class GameHost {
 
   /** Drive a demo lap behind the menus. */
   attract(setup: RaceSetup) {
+    this.sendMoments();
     this.paused = false;
     document.body.classList.remove('racing');
     this.touchEl?.classList.add('hidden');
@@ -151,6 +158,8 @@ export class GameHost {
     this.reported = false;
     document.body.classList.add('racing');
     this.game.start(setup);
+    this.tracker.reset();
+    this.momentsSent = false;
     this.showTouch();
     this.last = performance.now();
     this.samples = [];
@@ -174,6 +183,15 @@ export class GameHost {
 
   private showTouch() {
     if (this.input.lastTouch && this.racing && !this.paused) this.touchEl?.classList.remove('hidden');
+  }
+
+  /** Hand over the race's moments once (early if the player leaves before the aftermath is filmed). */
+  private sendMoments() {
+    if (this.momentsSent) return;
+    this.momentsSent = true;
+    const g = this.game;
+    if (g.phase !== 'finished') return;
+    this.onMoments?.(this.tracker.finish(), { setup: g.setup, track: g.track, L: g.L });
   }
 
   /** Collect frame gaps over the first 3 seconds of racing, then decide once. */
@@ -224,7 +242,15 @@ export class GameHost {
     if (!this.hidden && !this.paused) {
       const was = this.game.phase;
       this.game.update(dt);
-      if (this.game.phase === 'finished' && was !== 'finished') this.finishedAt = now;
+      if (this.game.phase === 'finished' && was !== 'finished') {
+        this.finishedAt = now;
+        this.tracker.finished(this.game);
+      }
+      // Before the render, which clears the frame's hit events.
+      if (!this.momentsSent) {
+        this.tracker.observe(this.game);
+        if (this.game.phase === 'finished' && !this.tracker.filming) this.sendMoments();
+      }
       if (this.game.phase === 'finished' && !this.reported && now - this.finishedAt > 1600 && this.game.results) {
         this.reported = true;
         document.body.classList.remove('racing');

@@ -5,13 +5,16 @@ import type { SaveData } from '../../save/save';
 import { formatTime, money, ordinal } from '../format';
 import { Fact } from '../parts';
 import { useState } from 'react';
-import { shareChallenge } from '../../app/challenge';
+import { challengeLink, shareChallenge } from '../../app/challenge';
+import { MomentsBox, SharePoll, type MomentSet } from '../MomentsBox';
 import { track as logPlay } from '../../app/analytics';
 import { GameIcon } from '../art/Icons';
 
 interface Props {
   last: LastRace;
   save: SaveData;
+  /** Share Moments: null while the last one is still being filmed. */
+  moments: MomentSet | null;
   onAgain: () => void;
   onNext: () => void;
   onCareer: () => void;
@@ -22,7 +25,7 @@ interface Props {
 
 const suffix = (n: number) => ordinal(n).slice(String(n).length);
 
-export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage, setName }: Props) {
+export function ResultsScreen({ last, save, moments, onAgain, onNext, onCareer, onGarage, setName }: Props) {
   const r = last.results;
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [name, setNameDraft] = useState(save.settings.name);
@@ -39,6 +42,12 @@ export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage,
     if (how === 'shared' || how === 'copied') logPlay('challenge_sent', { method: how, track: ghost.trackId, reply: vsGhost ? 1 : 0 });
   };
   const daily = last.daily;
+  const trackName = trackById(r.trackId).name;
+  const dare = r.busted ? `Outrun the police on ${trackName}` : `Beat my ${formatTime(r.time)} on ${trackName}`;
+  const clipText = () => {
+    const url = last.myGhost ? challengeLink({ ...last.myGhost, name: name.trim() }) : `${location.origin}${location.pathname}`;
+    return { text: r.busted ? `Busted on Throttle Bike. Can you outrun them?` : `Throttle Bike. ${dare}:`, url };
+  };
   // Daily races are about the time, not the career: the main button is another try.
   const qualified = !daily && !r.busted && r.place <= QUALIFY_PLACE;
   const verdict = r.busted ? (r.fine > 0 ? `Fined ${money(r.fine)}` : 'No fine this time') : daily ? (r.place === 1 ? 'You win' : 'Daily race') : r.place === 1 ? 'You win' : qualified ? 'Qualified' : `Top ${QUALIFY_PLACE} to qualify`;
@@ -81,6 +90,9 @@ export function ResultsScreen({ last, save, onAgain, onNext, onCareer, onGarage,
           </div>
         )}
         {last.unlocked && <div className="banner">Level {last.unlocked} unlocked: {levelDef(last.unlocked).name}</div>}
+
+        <MomentsBox moments={moments} dare={dare} shareText={clipText} />
+        <SharePoll races={save.stats.races} />
 
         <div className="stat-grid">
           <Fact label="Time">{formatTime(r.time)}</Fact>

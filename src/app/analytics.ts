@@ -11,7 +11,7 @@ const DEFAULT_HOST = 'https://gateway.umami.is';
  */
 export const GAME_DOMAINS = ['throttlebike.com', 'www.throttlebike.com'];
 
-export type AnalyticsName = 'race_start' | 'race_end' | 'purchase' | 'level_unlock' | 'app_open' | 'install_card' | 'challenge_sent' | 'challenge_open' | 'challenge_result' | 'daily_end';
+export type AnalyticsName = 'race_start' | 'race_end' | 'purchase' | 'level_unlock' | 'app_open' | 'install_card' | 'challenge_sent' | 'challenge_open' | 'challenge_result' | 'daily_end' | 'clip_made' | 'clip_shared' | 'share_poll';
 
 export interface AnalyticsEnv {
   mode: string;

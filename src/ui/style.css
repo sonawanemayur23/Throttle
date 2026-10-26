@@ -1580,3 +1580,153 @@ textarea {
   font-size: 14px;
   font-style: normal;
 }
+
+/* Share Moments (P3-03): the clip, its moments and styles, one share button. */
+.moments {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  background: rgba(255, 211, 77, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(255, 211, 77, 0.45);
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  text-align: left;
+}
+.moments-head {
+  display: grid;
+  gap: 2px;
+}
+.moments-head b {
+  font-size: 24px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.moments-stage {
+  position: relative;
+  width: min(100%, 300px);
+  aspect-ratio: 9 / 16;
+  margin: 0 auto;
+  background: #000;
+  overflow: hidden;
+}
+.moments-stage video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+}
+.moments-wait {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+}
+.moments-bar {
+  width: 180px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.15);
+}
+.moments-bar i {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transition: width 0.2s linear;
+}
+.moments-sound {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  background: rgba(18, 13, 38, 0.75);
+  color: var(--text);
+  font: 700 13px/1 var(--body);
+}
+.moments-picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: 6px;
+}
+.moment-card {
+  display: grid;
+  gap: 2px;
+  min-height: 52px;
+  padding: 8px;
+  border: 1px solid var(--line-strong);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  text-align: left;
+  font: 600 12px/1.2 var(--body);
+}
+.moment-card b {
+  font: 800 14px/1 var(--display);
+  text-transform: uppercase;
+}
+.moment-card span {
+  opacity: 0.7;
+}
+.moment-card.on {
+  border-color: var(--gold);
+  background: rgba(255, 211, 77, 0.14);
+}
+.moments-styles,
+.moments-skip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.style-chip {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font: 800 15px/1 var(--display);
+  text-transform: uppercase;
+}
+.moments-styles .style-chip {
+  flex: 1;
+}
+.style-chip.on {
+  border-color: var(--gold);
+  background: var(--gold);
+  color: var(--ink);
+}
+.moments-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.linkish {
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  text-decoration: underline;
+  font: inherit;
+  cursor: pointer;
+}
+.linkish:disabled {
+  opacity: 0.4;
+}
+.poll {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 14px;
+  background: rgba(127, 184, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(127, 184, 255, 0.4);
+  text-align: left;
+}
+.poll-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}

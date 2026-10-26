@@ -10,6 +10,7 @@ State on 25 Oct 2026: Phase 1 done. Phase 2 features done, hosted on Vercel, ana
 
 1. **P2-12** Phone performance on real devices (auto quality, P2-15, is in; check it picks the right setting).
 2. **P2-18** Balance, once there is a week of analytics.
+3. **Share Moments soft launch**: test Share to Status / Story on Mayur's iPhone (Chrome and Safari) and an Android phone on throttlebike.com, then post. Watch `clip_made`, `clip_shared` and `share_poll` in Umami.
 
 Each task below has a Why, a Do and a Done when. If a task is unclear, ask Mayur before building.
 
@@ -175,7 +176,7 @@ Goal: every player brings in at least one more. Gate: viral coefficient 0.5 or m
 | --- | --- | --- | --- |
 | P3-01 | Ghost recording: store the player's inputs or positions per race, compact format | done | |
 | P3-02 | Challenge link: "beat my score" URL that loads the same track and the sender's ghost | done | P3-01 |
-| P3-03 | Auto clip: record the best knockout as a 5 second vertical video with MediaRecorder | todo | |
+| P3-03 | Share Moments: the race's best moments filmed again from a replay as 10 second vertical clips in 3 styles, shared to Status / Story with the challenge link | done | |
 | P3-04 | Share sheet: Web Share on phones, copy link on desktop, link preview image with score (share done; preview image needs P3-06) | doing | P3-02 |
 | P3-05 | Daily race: one seeded track for the world, resets at 00:00 UTC | done | |
 | P3-06 | Backend: accounts (guest first, optional sign in), leaderboards, daily race results | todo | |
@@ -201,6 +202,8 @@ Goal: friends race and fight live from one link. Gate: 10,000 daily players in 3
 | P4-09 | Launch: Product Hunt, Reddit, itch.io, CrazyGames, Poki | todo | P4-05 |
 
 ## Notes
+
+- Share Moments (P3-03), Oct 2026. Replaces the live screen recording of PR #37, which stuttered and looked soft. During a race `MomentTracker` (src/engine/replay.ts) keeps 7 seconds of snapshots (riders, cop, traffic, hits) and saves the build up and 4 seconds of aftermath around each moment: takedown, combo takedown, cop down, wipeout, threading traffic (3 near misses in 4 seconds), taking the lead, photo finish, first place, busted. The top 3 by share value are offered. After the race `film.ts` draws the moment again frame by frame at 30 fps, 720 x 1280, with a cinematic renderer (no HUD), so the clip is smooth on any phone. Styles are timelines in `timeline.ts`: Hype (slow motion through the hit, big caption, beat drop), Funny (freeze, OOF, record scratch, slide whistle), Clean (race sound only, small caption). Sound is synthesized offline in `clipAudio.ts`, so the drop lands on the hit frame and nothing needs a licence. Every clip ends on a 1 second card with the dare and throttlebike.com. Encoding: H.264 MP4 through WebCodecs (Mediabunny), AAC or Opus audio; browsers without WebCodecs record the frames in real time with MediaRecorder. The clip is made in the background when the results show, because the share sheet only opens straight from a tap. Events: `clip_made` (moment, style, ms, format, rank), `clip_shared` (method share or save), `share_poll` (q send after the 3rd race, q skip from "Not your best moment?").
 
 - Analytics fix, Oct 2026: Umami showed every visit twice (one session with the pageview, one with the game event), because game events were sent with our player id and the pageview without. The tracker now gets the id up front (`data-distinct-id`), and game events go through `umami.track` when the tracker is loaded, so a visit is one session and day 1 return can be measured. Only throttlebike.com and www.throttlebike.com count (`data-domains`, `GAME_DOMAINS`). First day of data: apart from Mayur, the visitors came from data centre towns (Ashburn, Boardman, Council Bluffs, San Jose) with no races: bots and link preview fetchers. A real player is a session with `race_start`.
 
